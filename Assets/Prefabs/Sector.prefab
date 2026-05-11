@@ -1,0 +1,92 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &3259997270715578205
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8935201850959598875}
+  - component: {fileID: 6995140634163801208}
+  - component: {fileID: 3491299782071499135}
+  - component: {fileID: 1076506563641532558}
+  m_Layer: 0
+  m_Name: Sector
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8935201850959598875
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3259997270715578205}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 4359.2812, y: -137.02124, z: 3891.1797}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6995140634163801208
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3259997270715578205}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e189a5feaf879e74081fc00cc6333b9a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Sector
+  shopPrefab: {fileID: 1840832286891347029, guid: 2511500b21697be4b85d81b7083581e9, type: 3}
+  repairStationPrefab: {fileID: 9141301808406721075, guid: b7553490222005a49b858f43f72050a0, type: 3}
+--- !u!114 &3491299782071499135
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3259997270715578205}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 506ea3ddaa85d69bc97eec4e89a3769a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AreaSpawnerManager
+  database: {fileID: 11400000, guid: e4ec2f247777faabc94200269233dc28, type: 2}
+  areaSize: {x: 40, y: 40, z: 40}
+  worldSpawnSize: {x: 500, y: 0, z: 500}
+  prefabs:
+  - {fileID: 5832361097752599570, guid: 042060f9cc711664486f11015238218d, type: 3}
+  - {fileID: 1302909118944871589, guid: 6ea31685f02a24448bf0d36f42862d1b, type: 3}
+  - {fileID: 8116614570454455140, guid: 51e0dcdf1bdd76a4c9c651a27dce938b, type: 3}
+  - {fileID: 7130737379568621406, guid: 066ab42dcddc3234fafa20e7fe250993, type: 3}
+  currentSectorStage: 0
+--- !u!65 &1076506563641532558
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3259997270715578205}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
