@@ -1,19 +1,19 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class kameraTpp : MonoBehaviour
+public class CameraTPP : MonoBehaviour
 {
     public Transform target;
 
-    [Header("Przesuniêcie Celu")]
+    [Header("Target Offset")]
     public Vector3 targetOffset = new Vector3(0, 0f, 0);
 
-    [Header("Ustawienia Orbity")]
+    [Header("Orbit Settings")]
     [SerializeField] private float sensitivity = 0.5f;
     [SerializeField] private float yMinLimit = -20f;
     [SerializeField] private float yMaxLimit = 80f;
 
-    [Header("Ustawienia Zoomu")]
+    [Header("Zoom Settings")]
     [SerializeField] private float targetDistance = 15.0f;
     [SerializeField] private float minDistance = 5.0f;
     [SerializeField] private float maxDistance = 50.0f;
@@ -49,17 +49,15 @@ public class kameraTpp : MonoBehaviour
     void LateUpdate()
     {
         if (target == null) return;
-        if (GameManager.Instance.currentState != GameState.Mining)
+        if (GameManager.Instance != null && GameManager.Instance.currentState != GameState.Mining)
         {
             if (Mouse.current != null)
             {
-                // --- OBRÓT ---
                 Vector2 mouseDelta = Mouse.current.delta.ReadValue();
                 mouseX += mouseDelta.x * sensitivity * 0.5f;
                 mouseY -= mouseDelta.y * sensitivity * 0.5f;
                 mouseY = Mathf.Clamp(mouseY, yMinLimit, yMaxLimit);
 
-                // --- ZOOM ---
                 float scrollInput = Mouse.current.scroll.ReadValue().y;
                 if (scrollInput != 0)
                 {

@@ -1,6 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using Unity.VisualScripting;
+
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -44,13 +44,6 @@ public class ShipStats : MonoBehaviour {
         if (CurrentHP <= 0) CurrentHP = MaxHP;
         if (CurrentEnergy <= 0) CurrentEnergy = MaxEnergy;
         if (CurrentCargo <= 0) CurrentCargo = 0;
-
-        DeveloperConsole.Instance.AddCommand("set_hp", SetHPCommand);
-        DeveloperConsole.Instance.AddCommand("set_max_hp", SetMaxHPCommand);
-        DeveloperConsole.Instance.AddCommand("set_energy", SetEnergyCommand);
-        DeveloperConsole.Instance.AddCommand("set_max_energy", SetMaxEnergyCommand);
-        DeveloperConsole.Instance.AddCommand("get_hp", GetHPCommand);
-        DeveloperConsole.Instance.AddCommand("get_energy", GetEnergyCommand);
     }
 
     public void ResetData()

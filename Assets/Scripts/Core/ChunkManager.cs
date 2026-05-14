@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 [System.Serializable]
 public class AsteroidSavedData {
@@ -16,6 +15,7 @@ public class BeltSavedData {
     public List<AsteroidSavedData> asteroids = new List<AsteroidSavedData>();
     public bool respawnTriggered = false;
 }
+
 public class SectorData {
     public Vector2Int gridPosition;
     public int sectorStage;
@@ -41,8 +41,7 @@ public class ChunkManager : MonoBehaviour
 
     public int mapCols { get; private set; } = 6;
     public int mapRows { get; private set; } = 6;
-    // TO jest bardzo do zmiany, bo nie wiem ile daæ ¿eby by³o ok, narazie do testó 4x4x4 km starczy raczej
-    [SerializeField] private float sectorSize  = 400f ;
+    [SerializeField] private float sectorSize = 400f;
     public float SectorSize => sectorSize;
     [SerializeField] private Transform player;
     public Transform Player => player;
@@ -57,11 +56,9 @@ public class ChunkManager : MonoBehaviour
     public static int globalGroupCount = 0;
     public int maxGlobalGroups = 20;
 
-    // Generacja 6x6 mapy oraz predefiniowanie danych w asteroidach na ca³ej mapie
     private void GenerateWorldData() {
         List<Vector2Int> allCoords = new List<Vector2Int>();
 
-        // Tworzenie pustych sektorów
         for (int x = 0; x < mapCols; x++) {
             for (int y = 0; y < mapRows; y++) {
                 Vector2Int pos = new Vector2Int(x, y);
@@ -77,7 +74,6 @@ public class ChunkManager : MonoBehaviour
                 {
                     newData.haveShop = true;
                     newData.haveRepairStation = true;
-                    float limit = (sectorSize / 2f);
                     Vector3 shopLocalPosition = GenerateRandomCords();
                     Vector3 repairStationLocalPosition = GenerateRandomCords();
 
@@ -99,14 +95,11 @@ public class ChunkManager : MonoBehaviour
             }
         }
 
-        // Usuwamy sektor startowy z puli losowania i robimy tak, ¿eby ZAWSZE by³y tam asteroidy
         allCoords.Remove(Vector2Int.zero);
         SectorData startSector = allSectorData[Vector2Int.zero];
         startSector.hasAsteroidGroup = true;
-        PopulateSectorWithBelts(startSector); // Odpalamy generator dla startówki
+        PopulateSectorWithBelts(startSector);
 
-
-        // 29 bo usuwamy jeden sektor startowy z puli losowania, ale to chyba bêdziemy mieli do zmiany zobacyzmy ju¿ jak dodamy latanie i zbieranie, czy nie jest za du¿o
         int groupsToSpawn = 29;
         for (int i = 0; i < groupsToSpawn; i++) {
             if (allCoords.Count == 0) break;
@@ -120,44 +113,20 @@ public class ChunkManager : MonoBehaviour
             PopulateSectorWithBelts(sd);
         }
 
-        // TEST DO KONSOLI
-        //DebugMapStats();
-
-        mapDisplay.GenerateMapUI();
+        if (mapDisplay != null) {
+            mapDisplay.GenerateMapUI();
+        }
     }
 
     public Vector3 GenerateRandomCords()
     {
         float limit = (sectorSize / 2f);
-        Vector3 randomCords = new Vector3(
+        return new Vector3(
             Random.Range(-limit, limit),
             Random.Range(-limit, limit),
             Random.Range(-limit, limit)
         );
-
-        return randomCords;
     }
-
-    //public void DebugMapStats() {
-    //    int totalSectorsWithAsteroids = 0;
-    //    int totalBelts = 0;
-    //    int totalAsteroids = 0;
-
-    //    foreach (var data in allSectorData.Values) {
-    //        if (data.hasAsteroidGroup) {
-    //            totalSectorsWithAsteroids++;
-    //            totalBelts += data.belts.Count;
-    //            foreach (var belt in data.belts) {
-    //                totalAsteroids += belt.asteroids.Count;
-    //            }
-    //        }
-    //    }
-
-    //    Debug.Log("RAPORT GENERACJI ŒWIATA");
-    //    Debug.Log($"Sektory z asteroidami: {totalSectorsWithAsteroids} / 36");
-    //    Debug.Log($"£¹czna liczba pasów: {totalBelts}");
-    //    Debug.Log($"£¹czna liczba asteroid w pamiêci: {totalAsteroids}");
-    //}
 
     private List<ResourceStack> PreGenerateLoot(int stage) {
         List<ResourceStack> generatedLoot = new List<ResourceStack>();
@@ -179,7 +148,6 @@ public class ChunkManager : MonoBehaviour
         return generatedLoot;
     }
 
-    // Wyœwietlanie, aktualizacja i usuwanie aktywnego sektora
     private void RefreshSectorView(Vector2Int sectorCooRD) {
         if (currentSectorObject != null) {
             Destroy(currentSectorObject);
@@ -194,13 +162,14 @@ public class ChunkManager : MonoBehaviour
             if (sectorScript != null) {
                 sectorScript.Setup(dataFromMemory, sectorSize);
             }
-            string x = ((char)('A' + sectorCooRD[1])).ToString();
-            int y = sectorCooRD[0] + 1;
-            sectorInfo.SetText("Aktualny Sektor: "+x+y);
+            string x = ((char)('A' + sectorCooRD.y)).ToString();
+            int y = sectorCooRD.x + 1;
+            if (sectorInfo != null) {
+                sectorInfo.SetText("Aktualny Sektor: " + x + y);
+            }
         }
     }
 
-    // Generacja asteroid w pasie
     private void PopulateSectorWithBelts(SectorData targetSector) {
         float halfSector = sectorSize / 2f;
         float safeLimit = halfSector - 100f;
@@ -226,40 +195,31 @@ public class ChunkManager : MonoBehaviour
         }
     }
 
-    // Rozruch
     void Start()
     {
         GenerateWorldData();
-        //Debug.Log("Wygenerowano bazê danych sektorów: " + allSectorData.Count);
     }
 
     void Update()
     {
-        if (player == null) {
-            return;
-        }
-        // Ograniczenie Clampem, ¿eby nie wylecieæ za sektory (bo wywala b³êdy)
+        if (player == null) return;
+
         float maxX = mapCols * sectorSize;
         float maxZ = mapRows * sectorSize;
 
         Vector3 limitedPos = player.position;
         limitedPos.x = Mathf.Clamp(limitedPos.x, 0, maxX - 1);
         limitedPos.z = Mathf.Clamp(limitedPos.z, 0, maxZ - 1);
-
-        // ¯eby nie wylecieæ poza Y Sektora
         limitedPos.y = Mathf.Clamp(limitedPos.y, -sectorSize / 2f, sectorSize / 2f);
         player.position = limitedPos;
 
-        // Pobieranie sektora w którym znajduje sie gracz
         int playerXPosition = Mathf.FloorToInt(player.position.x / sectorSize);
         int playerZPosition = Mathf.FloorToInt(player.position.z / sectorSize);
 
         Vector2Int currentPos = new Vector2Int(playerXPosition, playerZPosition);
 
-        // Zmiana informacji o sektorze
         if (currentPos != currentPlayerSector) {
             currentPlayerSector = currentPos;
-            //Debug.Log("Wlecia³em do nowego sektora:" + currentPlayerSector);
             RefreshSectorView(currentPos);
         }
     }
@@ -277,9 +237,7 @@ public class ChunkManager : MonoBehaviour
         if (availableSectors.Count > 0) {
             SectorData targetSector = availableSectors[Random.Range(0, availableSectors.Count)];
             targetSector.hasAsteroidGroup = true;
-
             PopulateSectorWithBelts(targetSector);
-            Debug.Log($"GDD Respawn: Nowa grupa asteroid zespawnowana w sektorze {targetSector.gridPosition}");
         }
     }
 
@@ -304,14 +262,14 @@ public class ChunkManager : MonoBehaviour
 
         List<string> array = new List<string>();
         if (sum != 0) {
-            array.Add($"£¹cznie: {sum}");
+            array.Add("Total: " + sum);
             foreach (var top in top_three) {
                 float result = (top.Value / sum) * 100;
-                array.Add($"{top.Key.Name}: {result:F0}%");
+                array.Add(top.Key.Name + ": " + result.ToString("F0") + "%");
             }
         }
         else {
-            array.Add("Nic nie znajdujê siê w wybranych sektorze");
+            array.Add("Nothing found in selected sector");
         }
         return array;
     }

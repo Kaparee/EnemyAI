@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class enemyAI : MonoBehaviour
+public class EnemyAI : MonoBehaviour
 {
     public enum EnemyState { Idle, Chase, Fight }
 
