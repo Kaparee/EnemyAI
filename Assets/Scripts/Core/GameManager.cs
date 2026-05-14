@@ -40,6 +40,17 @@ public class GameManager : MonoBehaviour
         {
             Debug.LogWarning("Drugi GameManager został zniszczony (duplikat)");
             Destroy(gameObject);
+            return;
+        }
+
+        // Próba automatycznego znalezienia gracza jeśli nie jest przypisany
+        if (player == null) {
+            GameObject p = GameObject.FindGameObjectWithTag("Player");
+            if (p != null) player = p;
+        }
+
+        if (player != null && shipStats == null) {
+            shipStats = player.GetComponent<ShipStats>();
         }
     }
 
@@ -115,7 +126,17 @@ public class GameManager : MonoBehaviour
     {
         Time.timeScale = 1f;
 
-        shipStats.Heal(shipStats.GetMaxHP());
+        // Jeśli wciąż null, spróbuj znaleźć
+        if (player == null) {
+            player = GameObject.FindGameObjectWithTag("Player");
+        }
+        if (player != null && shipStats == null) {
+            shipStats = player.GetComponent<ShipStats>();
+        }
+
+        if (shipStats != null) {
+            shipStats.Heal(shipStats.GetMaxHP());
+        }
 
         if (player != null)
         {

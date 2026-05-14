@@ -18,7 +18,14 @@ public class DamageCollision : MonoBehaviour
 
             if (collision.gameObject.CompareTag("Player"))
             {
-                GameManager.Instance.TriggerGameOver();
+                if (GameManager.Instance != null)
+                {
+                    GameManager.Instance.TriggerGameOver();
+                }
+                else
+                {
+                    Debug.LogWarning("DamageCollision: Próba wywołania TriggerGameOver, ale GameManager.Instance jest nullem!");
+                }
             }
         }
     }

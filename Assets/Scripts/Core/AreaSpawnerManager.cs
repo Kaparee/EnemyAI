@@ -26,12 +26,6 @@ public class AreaSpawnerManager : MonoBehaviour
         if (!data.hasAsteroidGroup) return;
 
         foreach (BeltSavedData belt in data.belts) {
-            int emptyCount = 0;
-            foreach (var ast in belt.asteroids) {
-                if (ast.loot.Count == 0) emptyCount++;
-            }
-
-            if (emptyCount == belt.asteroids.Count) continue;
 
             GameObject areaObj = GameObject.CreatePrimitive(PrimitiveType.Cube);
             areaObj.transform.position = transform.position + belt.beltCenter;
@@ -40,7 +34,6 @@ public class AreaSpawnerManager : MonoBehaviour
             SetupMaterial(areaObj);
 
             foreach (AsteroidSavedData astData in belt.asteroids) {
-                if (astData.loot.Count == 0) continue;
 
                 Vector3 worldPos = (transform.position + belt.beltCenter) + astData.localPos;
                 GameObject obj = Instantiate(prefabs[Random.Range(0, prefabs.Length)], worldPos, Quaternion.identity, this.transform);
@@ -52,14 +45,10 @@ public class AreaSpawnerManager : MonoBehaviour
 
                 io.manager = this;
                 io.parentArea = areaObj;
-                io.lootTable = astData.loot;
                 io.myBelt = belt;
                 io.myData = astData;
 
                 Asteroid asteroidVisual = obj.GetComponent<Asteroid>();
-                if (asteroidVisual != null) {
-                    asteroidVisual.materials = astData.loot;
-                }
             }
             areas.Add(areaObj);
         }
@@ -70,9 +59,6 @@ public class AreaSpawnerManager : MonoBehaviour
         int emptyCount = 0;
         int totalAsteroids = beltData.asteroids.Count;
 
-        foreach (var ast in beltData.asteroids) {
-            if (ast.loot.Count == 0) emptyCount++;
-        }
 
         float minedPercentage = (float)emptyCount / totalAsteroids;
 

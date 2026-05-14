@@ -6,7 +6,6 @@ using UnityEngine;
 [System.Serializable]
 public class AsteroidSavedData {
     public Vector3 localPos;
-    public List<ResourceStack> loot = new List<ResourceStack>();
 }
 
 [System.Serializable]
@@ -22,10 +21,6 @@ public class SectorData {
     public bool hasAsteroidGroup;
     public bool wasSpawned = false;
     public List<BeltSavedData> belts = new List<BeltSavedData>();
-    public bool haveShop;
-    public Vector3 shopLocalPos;
-    public bool haveRepairStation;
-    public Vector3 repairStationLocalPos;
 }
 
 public class ChunkManager : MonoBehaviour
@@ -46,7 +41,6 @@ public class ChunkManager : MonoBehaviour
     [SerializeField] private Transform player;
     public Transform Player => player;
     [SerializeField] private GameObject sector;
-    [SerializeField] private ResourceDatabase resourceDB;
     private GameObject currentSectorObject = null;
 
     public Dictionary<Vector2Int, SectorData> allSectorData { get; private set; } = new Dictionary<Vector2Int, SectorData>();
@@ -57,6 +51,7 @@ public class ChunkManager : MonoBehaviour
     public int maxGlobalGroups = 20;
 
     private void GenerateWorldData() {
+
         List<Vector2Int> allCoords = new List<Vector2Int>();
 
         for (int x = 0; x < mapCols; x++) {
@@ -70,26 +65,6 @@ public class ChunkManager : MonoBehaviour
                 newData.sectorStage = Mathf.Clamp(stage == 0 ? 0 : stage - 1, 0, 4);
                 newData.hasAsteroidGroup = false;
                 newData.belts = new List<BeltSavedData>();
-                if ((x == 0 && y == 0) || (x == 3 && y == 3) || (x == 5 && y == 5))
-                {
-                    newData.haveShop = true;
-                    newData.haveRepairStation = true;
-                    Vector3 shopLocalPosition = GenerateRandomCords();
-                    Vector3 repairStationLocalPosition = GenerateRandomCords();
-
-                    if (Vector3.Distance(shopLocalPosition, repairStationLocalPosition) < 300)
-                    {
-                        repairStationLocalPosition = GenerateRandomCords();
-                    }
-
-                    newData.repairStationLocalPos = repairStationLocalPosition;
-                    newData.shopLocalPos = shopLocalPosition;
-                }
-                else
-                {
-                    newData.haveShop = false;
-                    newData.haveRepairStation = false;
-                }
 
                 allSectorData.Add(pos, newData);
             }
@@ -128,30 +103,15 @@ public class ChunkManager : MonoBehaviour
         );
     }
 
-    private List<ResourceStack> PreGenerateLoot(int stage) {
-        List<ResourceStack> generatedLoot = new List<ResourceStack>();
-        int totalUnits = Random.Range(40, 121);
-        int typesCount = Random.Range(3, 7);
-        int amountPerType = totalUnits / typesCount;
-
-        for (int i = 0; i < typesCount; i++) {
-            int roll = Random.Range(0, 100);
-            int targetStage = stage;
-            if (roll < 20) targetStage--;
-            else if (roll >= 90) targetStage++;
-
-            ResourceDefinition res = resourceDB.GetRandomResource(Mathf.Clamp(targetStage, 0, 4));
-            if (res != null) {
-                generatedLoot.Add(new ResourceStack { definition = res, amount = amountPerType });
-            }
-        }
-        return generatedLoot;
-    }
-
     private void RefreshSectorView(Vector2Int sectorCooRD) {
         if (currentSectorObject != null) {
             Destroy(currentSectorObject);
         }
+        if (sector == null) {
+            Debug.LogError("<color=red>ChunkManager: Brak przypisanego prefaba sektora!</color>");
+            return;
+        }
+
         Vector3 sectorSpawnPos = new Vector3((sectorCooRD.x * sectorSize) + (sectorSize / 2f), 0, (sectorCooRD.y * sectorSize) + (sectorSize / 2f));
         currentSectorObject = Instantiate(sector, sectorSpawnPos, Quaternion.identity);
 
@@ -188,7 +148,6 @@ public class ChunkManager : MonoBehaviour
             for (int a = 0; a < astCount; a++) {
                 AsteroidSavedData ast = new AsteroidSavedData();
                 ast.localPos = new Vector3(Random.Range(-19f, 19f), Random.Range(-19f, 19f), Random.Range(-19f, 19f));
-                ast.loot = PreGenerateLoot(targetSector.sectorStage);
                 belt.asteroids.Add(ast);
             }
             targetSector.belts.Add(belt);
@@ -202,7 +161,11 @@ public class ChunkManager : MonoBehaviour
 
     void Update()
     {
-        if (player == null) return;
+        if (player == null) {
+            GameObject p = GameObject.FindGameObjectWithTag("Player");
+            if (p != null) player = p.transform;
+            else return;
+        }
 
         float maxX = mapCols * sectorSize;
         float maxZ = mapRows * sectorSize;
@@ -239,38 +202,5 @@ public class ChunkManager : MonoBehaviour
             targetSector.hasAsteroidGroup = true;
             PopulateSectorWithBelts(targetSector);
         }
-    }
-
-    public List<string> GetSectorStats(SectorData sector) {
-        Dictionary<ResourceDefinition, int> allResources = new Dictionary<ResourceDefinition, int>();
-
-        foreach (var belt in sector.belts) {
-            foreach (var asteroid in belt.asteroids) {
-                foreach (var resource in asteroid.loot) {
-                    if (allResources.ContainsKey(resource.definition)) {
-                        allResources[resource.definition] += resource.amount;
-                    }
-                    else {
-                        allResources.Add(resource.definition, resource.amount);
-                    }
-                }
-            }
-        }
-
-        float sum = allResources.Sum(s => s.Value);
-        var top_three = allResources.OrderByDescending(s => s.Value).Take(3);
-
-        List<string> array = new List<string>();
-        if (sum != 0) {
-            array.Add("Total: " + sum);
-            foreach (var top in top_three) {
-                float result = (top.Value / sum) * 100;
-                array.Add(top.Key.Name + ": " + result.ToString("F0") + "%");
-            }
-        }
-        else {
-            array.Add("Nothing found in selected sector");
-        }
-        return array;
     }
 }

@@ -19,9 +19,6 @@ public class InteractableObject : MonoBehaviour {
 
     void OnTriggerEnter(Collider other) {
         if (other.CompareTag("Player")) {
-            if (myData != null) {
-                myData.loot.Clear();
-            }
 
             if (manager != null) {
                 manager.OnObjectInteracted(parentArea, myBelt);
@@ -50,11 +47,11 @@ public class InteractableObject : MonoBehaviour {
     {
         if (distanceBetweenObjects > 60)
         {
-            if (myData != null)
+
+            if (manager != null)
             {
-                myData.loot.Clear();
+                manager.OnObjectInteracted(parentArea, myBelt);
             }
-            manager.OnObjectInteracted(parentArea, myBelt);
 
             if (explosionPrefab != null)
             {
