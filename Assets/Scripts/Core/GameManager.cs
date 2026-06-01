@@ -28,6 +28,22 @@ public class GameManager : MonoBehaviour
     [SerializeField] private ShipStats shipStats;
 
     public List<Transform> allRepairStationsPosition = new List<Transform>();
+
+    [Header("Enemy Registry")]
+    public List<EnemyAI> activeEnemies = new List<EnemyAI>();
+
+    public void RegisterEnemy(EnemyAI enemy)
+    {
+        if (!activeEnemies.Contains(enemy))
+            activeEnemies.Add(enemy);
+    }
+
+    public void UnregisterEnemy(EnemyAI enemy)
+    {
+        if (activeEnemies.Contains(enemy))
+            activeEnemies.Remove(enemy);
+    }
+
     private void Awake()
     {
         if (Instance == null)

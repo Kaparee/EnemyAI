@@ -6,35 +6,47 @@ public class CustomRadarSystem : MonoBehaviour
     public Transform detectedPlayer;
     public Turret[] turretsToControl;
 
+    private float scanInterval = 0.5f;
+    private float nextScanTime;
+
     private void Update()
     {
-        ScanForPlayerManually();
-
-        foreach (Turret turret in turretsToControl)
+        if (Time.time >= nextScanTime)
         {
-            turret.target = detectedPlayer;
+            ScanForPlayerManually();
+            nextScanTime = Time.time + scanInterval;
         }
     }
 
     private void ScanForPlayerManually()
     {
-        detectedPlayer = null;
-        float detectionRadiusSqr = detectionRadius * detectionRadius;
-        float closestDistanceSqr = float.MaxValue;
+        Collider[] hits = Physics.OverlapSphere(transform.position, detectionRadius, LayerMask.GetMask("Player"));
+        Transform closest = null;
+        float minDist = float.MaxValue;
 
-        foreach (PlayerMarker player in PlayerMarker.AllPlayers)
+        foreach (var hit in hits)
         {
-            float dx = player.transform.position.x - transform.position.x;
-            float dy = player.transform.position.y - transform.position.y;
-            float dz = player.transform.position.z - transform.position.z;
-
-            float distanceSqr = (dx * dx) + (dy * dy) + (dz * dz);
-
-            if (distanceSqr <= detectionRadiusSqr && distanceSqr < closestDistanceSqr)
+            float dist = Vector3.Distance(transform.position, hit.transform.position);
+            if (dist < minDist)
             {
-                closestDistanceSqr = distanceSqr;
-                detectedPlayer = player.transform;
+                minDist = dist;
+                closest = hit.transform;
             }
+        }
+
+        if (closest != null && detectedPlayer != closest)
+        {
+            detectedPlayer = closest;
+            EventBus.OnPlayerDetected?.Invoke(detectedPlayer);
+        }
+        else if (closest == null)
+        {
+            detectedPlayer = null;
+        }
+
+        foreach (Turret turret in turretsToControl)
+        {
+            turret.target = detectedPlayer;
         }
     }
 }

@@ -40,6 +40,10 @@ public class CustomSectorSpawner : MonoBehaviour
         float lookAngle = Mathf.Atan2(dx, dz) * Mathf.Rad2Deg;
         newEnemy.transform.eulerAngles = new Vector3(0, lookAngle, 0);
 
-        Debug.Log($"Wróg zespawnowany ręcznie. Kąt: {randomAngleRads} rad.");
+        EnemyAI aiComp = newEnemy.GetComponent<EnemyAI>();
+        if (aiComp != null && GameManager.Instance != null)
+        {
+            GameManager.Instance.RegisterEnemy(aiComp);
+        }
     }
 }
