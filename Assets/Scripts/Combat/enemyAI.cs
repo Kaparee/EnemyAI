@@ -15,6 +15,9 @@ public class EnemyAI : MonoBehaviour
     public float rotationSpeed = 2.5f;
     public float linearDrag = 0.5f;
     public float angularDrag = 1.2f;
+    public AnimationCurve accelerationCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+    public float antiDriftFactor = 2f;
+    private float currentAccelerationTime = 0f;
 
     [Header("Logika AI")]
     public Transform playerTarget;
@@ -24,12 +27,10 @@ public class EnemyAI : MonoBehaviour
     public float stopDistance = 50f;
 
     [Header("Statystyki")]
-    // TODO: Zastąpić ujednoliconym systemem pancerza i statystyk od Kuby
     public float maxHealth = 500f;
     public float currentHealth = 500f;
 
     [Header("Patrol Settings")]
-    // TODO: Zintegrować z Patrol Waypoint Manager od Kuby 
     public List<Vector3> patrolWaypoints = new List<Vector3>();
     private int currentWaypointIndex = 0;
     public float waypointThreshold = 20f;
@@ -129,7 +130,6 @@ public class EnemyAI : MonoBehaviour
 
     private void PatrolLogic()
     {
-        // TODO: Połączyć z Manualnym A* dla poruszania się po gridzie
         if (patrolWaypoints.Count == 0) return;
 
         Vector3 target = patrolWaypoints[currentWaypointIndex];
@@ -185,7 +185,6 @@ public class EnemyAI : MonoBehaviour
     {
         Vector3 direction = (targetPos - transform.position).normalized;
         
-        // Uniki reaktywne
         if (avoidance != null)
         {
             direction = avoidance.GetModifiedDirection(direction);
@@ -197,8 +196,19 @@ public class EnemyAI : MonoBehaviour
         float distance = Vector3.Distance(transform.position, targetPos);
         if (distance > stopDistance)
         {
-            rb.AddRelativeForce(Vector3.forward * mainThrust);
+            currentAccelerationTime += Time.fixedDeltaTime;
+            float thrustMultiplier = accelerationCurve.Evaluate(Mathf.Clamp01(currentAccelerationTime / 2f));
+            rb.AddRelativeForce(Vector3.forward * mainThrust * thrustMultiplier);
         }
+        else
+        {
+            currentAccelerationTime = 0f;
+        }
+
+        Vector3 localVelocity = transform.InverseTransformDirection(rb.linearVelocity);
+        float driftX = localVelocity.x;
+        float driftY = localVelocity.y;
+        rb.AddRelativeForce(new Vector3(-driftX * antiDriftFactor, -driftY * antiDriftFactor, 0f), ForceMode.Acceleration);
     }
 
     private void FaceTarget(Vector3 targetPos)
@@ -210,11 +220,25 @@ public class EnemyAI : MonoBehaviour
 
     public void TakeDamage(float amount)
     {
-        // TODO: Dodać kalkulację pancerza strefowego od Kuby
         currentHealth -= amount;
         if (currentHealth <= 0)
         {
-            // Eksplozja itp.
+            EventBus.OnEnemyDeath?.Invoke(this);
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.UnregisterEnemy(this);
+            }
+            
+            for (int i = 0; i < 5; i++)
+            {
+                GameObject debris = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                debris.transform.position = transform.position + Random.insideUnitSphere * 2f;
+                debris.transform.localScale = Vector3.one * Random.Range(0.5f, 2f);
+                Rigidbody drb = debris.AddComponent<Rigidbody>();
+                drb.AddExplosionForce(500f, transform.position, 10f);
+                Destroy(debris, 5f);
+            }
+            
             Destroy(gameObject);
         }
     }
