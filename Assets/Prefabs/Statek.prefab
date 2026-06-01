@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 4014363933009941905}
   - component: {fileID: 7188409876308626883}
   - component: {fileID: 5102545795517368402}
-  - component: {fileID: 7428943861149016050}
+  - component: {fileID: 6686885550058410293}
   m_Layer: 0
   m_Name: CameraFPP
   m_TagString: Untagged
@@ -129,7 +129,7 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
---- !u!114 &7428943861149016050
+--- !u!114 &6686885550058410293
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -138,11 +138,20 @@ MonoBehaviour:
   m_GameObject: {fileID: 2023167716056548581}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 86c6556701af9e04380698b89f691b6e, type: 3}
+  m_Script: {fileID: 11500000, guid: a86e09d271b3bab4b841dfed9facb804, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: FMODUnity::FMODUnity.StudioListener
-  nonRigidbodyVelocity: 0
-  attenuationObject: {fileID: 0}
+  m_EditorClassIdentifier: Assembly-CSharp::CameraTPP
+  target: {fileID: 0}
+  targetOffset: {x: 0, y: 0, z: 0}
+  sensitivity: 0.5
+  yMinLimit: -20
+  yMaxLimit: 80
+  targetDistance: 15
+  minDistance: 5
+  maxDistance: 50
+  zoomSpeed: 2
+  zoomSmoothness: 10
+  smoothSpeed: 10
 --- !u!1 &2226703568530053308
 GameObject:
   m_ObjectHideFlags: 0
@@ -245,16 +254,10 @@ GameObject:
   - component: {fileID: 2963227307252152453}
   - component: {fileID: 4716168445995143610}
   - component: {fileID: 5354358826323202205}
-  - component: {fileID: 4545132317829742280}
   - component: {fileID: 209206150800688110}
-  - component: {fileID: 5514230681829820067}
   - component: {fileID: 8880523692032160225}
-  - component: {fileID: 5521948451007107637}
-  - component: {fileID: 453888633088731935}
-  - component: {fileID: 6162023935671829792}
-  - component: {fileID: 5028408015949822535}
-  - component: {fileID: 2514051229234307260}
-  m_Layer: 0
+  - component: {fileID: 2196116321950578790}
+  m_Layer: 6
   m_Name: Statek
   m_TagString: Player
   m_Icon: {fileID: 0}
@@ -276,6 +279,7 @@ Transform:
   m_Children:
   - {fileID: 4014363933009941905}
   - {fileID: 9047407743925598575}
+  - {fileID: 991122334455667788}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!64 &2963227307252152453
@@ -351,22 +355,7 @@ MonoBehaviour:
   shipVisualModel: {fileID: 9047407743925598575}
   maxRollAngle: 15
   rollSmoothSpeed: 5
---- !u!114 &4545132317829742280
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9159566415028316715}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3e58b295da9a83e44921a818153e5084, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerInteract
-  range: 50
-  shipStats: {fileID: 209206150800688110}
-  canSell: 0
-  contextCanvas: {fileID: 0}
+  isInteractingWithUI: 0
 --- !u!114 &209206150800688110
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -383,6 +372,7 @@ MonoBehaviour:
   MaxEnergy: 200
   MaxCargo: 2137
   BaseMass: 20000
+  purchasedUpgrades: []
   maxMainThrust: 800000
   brakeThrust: 400000
   maneuverForce: 120000
@@ -391,28 +381,14 @@ MonoBehaviour:
   emergencySpeedMultiplier: 0.3
   normalDrainRate: 1
   lowFuelThreshold: 40
+  baseCargoCapacity: 100
+  currentMaxCargo: 0
+  frontArmorMultiplier: 0.5
+  sideArmorMultiplier: 1
+  rearArmorMultiplier: 1.5
   controlScriptsToDisable:
   - {fileID: 0}
   - {fileID: 0}
---- !u!114 &5514230681829820067
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9159566415028316715}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 40be2c77d6648b64883e7fa4cb0dd210, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UI_ShipStatus
-  hp: {fileID: 0}
-  hpText: {fileID: 0}
-  energy: {fileID: 0}
-  energyText: {fileID: 0}
-  cargo: {fileID: 0}
-  cargoText: {fileID: 0}
-  credits: {fileID: 0}
 --- !u!114 &8880523692032160225
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -426,15 +402,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DamageCollision
   damageMultiplier: 0.005
-  impactParticles: {fileID: 0}
-  hitSfx:
-    Guid:
-      Data1: 810749278
-      Data2: 1154247999
-      Data3: -395334721
-      Data4: -874036249
-    Path: event:/SFX/hit
---- !u!114 &5521948451007107637
+--- !u!114 &2196116321950578790
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -443,76 +411,40 @@ MonoBehaviour:
   m_GameObject: {fileID: 9159566415028316715}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cc5fc0a8ba2301808af7e210ca335e43, type: 3}
+  m_Script: {fileID: 11500000, guid: 94b8b718ef527d74896f3272af521606, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::InventoryToggle
-  inventoryPanel: {fileID: 0}
---- !u!114 &453888633088731935
-MonoBehaviour:
+  m_EditorClassIdentifier: Assembly-CSharp::HeavyKineticLauncher
+  projectilePrefab: {fileID: 7418877935538477467, guid: d880fadd0f7369c45968b050f0fa1305, type: 3}
+  muzzle: {fileID: 991122334455667788}
+  cooldown: 2.5
+--- !u!1 &991122334455667799
+GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9159566415028316715}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4cb096d8581f21e60be5ce6a9f240301, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerInventory
-  myItems: []
-  shipStats: {fileID: 209206150800688110}
-  uiDisplay: {fileID: 0}
---- !u!114 &6162023935671829792
-MonoBehaviour:
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 991122334455667788}
+  m_Layer: 6
+  m_Name: WeaponMuzzle
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &991122334455667788
+Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9159566415028316715}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3a47b6481b8a0c98295deec79059795f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::InventoryTester
-  inventory: {fileID: 453888633088731935}
-  database: {fileID: 11400000, guid: e4ec2f247777faabc94200269233dc28, type: 2}
-  testAmount: 50
---- !u!114 &5028408015949822535
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9159566415028316715}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3ec959b5dfea3b34186224e4dd882aa4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SellSystem
-  inventory: {fileID: 0}
-  economyManager: {fileID: 0}
-  shipStats: {fileID: 0}
-  playerInteract: {fileID: 0}
-  endScreen: {fileID: 0}
-  firstSell: 0
---- !u!114 &2514051229234307260
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9159566415028316715}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 350d7505baba41149a1798e16f7c7c41, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ShipSFX
-  thrusterSfx:
-    Guid:
-      Data1: 2078511689
-      Data2: 1224898132
-      Data3: -1079120961
-      Data4: -1392262593
-    Path: event:/SFX/thrusters
-  shipStats: {fileID: 209206150800688110}
-  fadeSpeed: 2
+  m_GameObject: {fileID: 991122334455667799}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 4}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3778796083961745902}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

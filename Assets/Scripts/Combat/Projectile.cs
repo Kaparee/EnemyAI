@@ -14,8 +14,14 @@ public class Projectile : MonoBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
+        if (collision.contactCount == 0)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
         Vector3 vel = collision.relativeVelocity;
-        Vector3 norm = collision.contacts[0].normal;
+        Vector3 norm = collision.GetContact(0).normal;
 
         float magnitude = Mathf.Sqrt((vel.x * vel.x) + (vel.y * vel.y) + (vel.z * vel.z));
         float nx = 0, ny = 0, nz = 0;
@@ -31,7 +37,12 @@ public class Projectile : MonoBehaviour
         float impactFactor = dotProduct < 0 ? -dotProduct : dotProduct;
         float finalDamage = baseDamage * impactFactor;
 
-        Debug.Log($"Współczynnik kąta: {impactFactor}. Obrażenia: {finalDamage}");
+        ShipStats stats = collision.collider.GetComponentInParent<ShipStats>();
+        if (stats != null && collision.contactCount > 0)
+        {
+            stats.TakeZonedDamage(finalDamage, collision.GetContact(0).normal);
+        }
+
         Destroy(gameObject);
     }
 }

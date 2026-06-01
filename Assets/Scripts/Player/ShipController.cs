@@ -46,6 +46,9 @@ public class ShipController : MonoBehaviour
     {
         launcher = GetComponent<HeavyKineticLauncher>();
 
+        if (GetComponent<PlayerAimHud>() == null)
+            gameObject.AddComponent<PlayerAimHud>();
+
         rb = GetComponent<Rigidbody>();
         stats = GetComponent<ShipStats>();
 

@@ -36,6 +36,11 @@ public class ShipStats : MonoBehaviour {
     public float baseCargoCapacity = 100f;
     public float currentMaxCargo;
 
+    [Header("--- PANCERZ STREFOWY ---")]
+    public float frontArmorMultiplier = 0.5f;
+    public float sideArmorMultiplier = 1.0f;
+    public float rearArmorMultiplier = 1.5f;
+
     [Header("--- SKRYPTY STERUJĄCE DO ZABLOKOWANIA ---")]
     [SerializeField] private MonoBehaviour[] controlScriptsToDisable;
 
@@ -63,6 +68,25 @@ public class ShipStats : MonoBehaviour {
     
 
     //****************88888
+    public void TakeZonedDamage(float baseDamage, Vector3 hitNormal)
+    {
+        float damage = baseDamage;
+        float dotForward = Vector3.Dot(transform.forward, hitNormal);
+        float dotRight = Vector3.Dot(transform.right, hitNormal);
+
+        if (Mathf.Abs(dotForward) > Mathf.Abs(dotRight))
+        {
+            if (dotForward > 0) damage *= frontArmorMultiplier;
+            else damage *= rearArmorMultiplier;
+        }
+        else
+        {
+            damage *= sideArmorMultiplier;
+        }
+
+        TakeDamage(damage);
+    }
+
     public void TakeDamage(float damage)
     {
         if (damage > 0f)
@@ -90,8 +114,15 @@ public class ShipStats : MonoBehaviour {
     {
         Debug.Log("<color=red>STATEK ZNISZCZONY!</color>");
 
-        // 1. Blokada sterowania
-        GameManager.Instance.ChangeState(GameState.GameOver);
+        EnemyAI enemyAI = GetComponent<EnemyAI>();
+        if (enemyAI != null)
+        {
+            enemyAI.Die();
+        }
+        else if (GameManager.Instance != null)
+        {
+            GameManager.Instance.ChangeState(GameState.GameOver);
+        }
     }
 
     public void Heal(float amount) {

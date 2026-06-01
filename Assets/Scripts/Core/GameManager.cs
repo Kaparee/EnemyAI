@@ -1,6 +1,6 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using TMPro;
-
 using System.Collections.Generic;
 public enum GameState
 {
@@ -34,14 +34,24 @@ public class GameManager : MonoBehaviour
 
     public void RegisterEnemy(EnemyAI enemy)
     {
-        if (!activeEnemies.Contains(enemy))
+        if (enemy != null && !activeEnemies.Contains(enemy))
             activeEnemies.Add(enemy);
     }
 
     public void UnregisterEnemy(EnemyAI enemy)
     {
-        if (activeEnemies.Contains(enemy))
-            activeEnemies.Remove(enemy);
+        activeEnemies.Remove(enemy);
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        activeEnemies.RemoveAll(e => e == null);
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+            SceneManager.sceneLoaded -= OnSceneLoaded;
     }
 
     private void Awake()
@@ -49,8 +59,8 @@ public class GameManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject); // przetrwa zmianę sceny
-            //Debug.Log("<color=cyan>GameManager został zainicjalizowany jako Singleton</color>");
+            DontDestroyOnLoad(gameObject);
+            SceneManager.sceneLoaded += OnSceneLoaded;
         }
         else
         {

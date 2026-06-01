@@ -1,122 +1,173 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Collections;
+using UnityEngine.Profiling;
 
 public class TacticalBrain : MonoBehaviour
 {
     [Header("Minimax Settings")]
     [SerializeField] private int searchDepth = 2;
     [SerializeField] private float maneuverDistance = 40f;
+    [SerializeField] private float playerManeuverDistance = 30f;
 
-    /// <summary>
-    /// Obliczanie wyprzedzenia strzału (Leading).
-    /// </summary>
+    private int alphaBetaCutCount;
+
     public Vector3 CalculateLeadingPosition(Transform target, Vector3 shooterPos, float projectileSpeed)
     {
-        // TODO: Zintegrować z prędkością wylotową z klasy bazowej broni Kamila
-        if (target == null) return Vector3.zero;
+        if (target == null || projectileSpeed <= 0.01f) return shooterPos;
 
         Rigidbody targetRb = target.GetComponent<Rigidbody>();
-        Vector3 targetVelocity = (targetRb != null) ? targetRb.linearVelocity : Vector3.zero;
+        Vector3 targetVelocity = targetRb != null ? targetRb.linearVelocity : Vector3.zero;
 
         float distance = Vector3.Distance(shooterPos, target.position);
         float timeToHit = distance / projectileSpeed;
+        Vector3 leadPos = target.position + targetVelocity * timeToHit;
 
-        // Proste prowadzenie: P_lead = P_target + V_target * t
-        Vector3 leadPos = target.position + (targetVelocity * timeToHit);
+        for (int i = 0; i < 2; i++)
+        {
+            timeToHit = Vector3.Distance(shooterPos, leadPos) / projectileSpeed;
+            leadPos = target.position + targetVelocity * timeToHit;
+        }
 
-        // Opcjonalnie: iteracja dla większej precyzji
-        float refinedTimeToHit = Vector3.Distance(shooterPos, leadPos) / projectileSpeed;
-        leadPos = target.position + (targetVelocity * refinedTimeToHit);
+        AILog.Leading(
+            $"Gracz się rusza — celuję z wyprzedzeniem (~{timeToHit:F1}s do trafienia).");
 
         return leadPos;
     }
 
-    /// <summary>
-    /// Wybór optymalnej pozycji walki (Manewr Burtowego) przy użyciu Minimaxa z Alpha-Beta pruning.
-    /// </summary>
-    public Vector3 GetOptimalCombatPosition(Transform target, Vector3 currentPos)
+    public IEnumerator GetOptimalCombatPositionCoroutine(Transform target, Vector3 currentPos, Vector3 currentForward, System.Action<Vector3> callback)
     {
-        if (target == null) return currentPos;
+        if (target == null)
+        {
+            callback?.Invoke(currentPos);
+            yield break;
+        }
 
-        List<Vector3> candidates = GetCandidatePositions(currentPos);
+        alphaBetaCutCount = 0;
+        Profiler.BeginSample("TacticalBrain.Minimax");
+
+        List<Vector3> candidates = GetCandidatePositions(currentPos, currentForward, maneuverDistance);
+        AILog.Minimax(
+            $"Minimax: sprawdzam {candidates.Count} moich ruchów na głębokość {searchDepth} (gracz też się rusza w drzewie).");
         Vector3 bestManeuver = currentPos;
         float bestVal = float.NegativeInfinity;
 
         foreach (Vector3 cand in candidates)
         {
-            // Start Minimax with depth 2
-            float val = MinimaxRecursive(cand, target.position, searchDepth, float.NegativeInfinity, float.PositiveInfinity, false);
+            Vector3 heading = (cand - currentPos).sqrMagnitude > 0.01f
+                ? (cand - currentPos).normalized
+                : currentForward;
+
+            float val = MinimaxRecursive(cand, heading, target.position, searchDepth, float.NegativeInfinity, float.PositiveInfinity, false);
             if (val > bestVal)
             {
                 bestVal = val;
                 bestManeuver = cand;
             }
+
+            yield return null;
         }
 
-        return bestManeuver;
+        Profiler.EndSample();
+        AILog.Minimax(
+            $"Wybrałem pozycję {bestManeuver}, ocena={bestVal:F0}. " +
+            $"Odrzuciłem {alphaBetaCutCount} gorszych gałęzi (alpha-beta).");
+        callback?.Invoke(bestManeuver);
     }
 
-    private List<Vector3> GetCandidatePositions(Vector3 origin)
+    private List<Vector3> GetCandidatePositions(Vector3 origin, Vector3 forward, float distance)
     {
+        Vector3 f = forward.sqrMagnitude > 0.01f ? forward.normalized : transform.forward;
+        Vector3 r = Vector3.Cross(Vector3.up, f).normalized;
+        if (r.sqrMagnitude < 0.01f) r = transform.right;
+
         return new List<Vector3>
         {
-            origin + transform.forward * maneuverDistance,
-            origin - transform.forward * maneuverDistance,
-            origin + transform.right * maneuverDistance,
-            origin - transform.right * maneuverDistance,
-            origin + transform.up * maneuverDistance,
-            origin - transform.up * maneuverDistance
+            origin + f * distance,
+            origin - f * distance,
+            origin + r * distance,
+            origin - r * distance,
+            origin + Vector3.up * distance * 0.5f,
+            origin - Vector3.up * distance * 0.5f
         };
     }
 
-    private float MinimaxRecursive(Vector3 pos, Vector3 targetPos, int depth, float alpha, float beta, bool isMaximizing)
+    private List<Vector3> GetPlayerCandidatePositions(Vector3 playerPos, Vector3 aiPos)
     {
-        if (depth == 0) return EvaluatePosition(pos, targetPos);
+        Vector3 awayFromAi = (playerPos - aiPos).sqrMagnitude > 0.01f
+            ? (playerPos - aiPos).normalized
+            : Vector3.forward;
+
+        Vector3 lateral = Vector3.Cross(Vector3.up, awayFromAi).normalized;
+
+        return new List<Vector3>
+        {
+            playerPos + lateral * playerManeuverDistance,
+            playerPos - lateral * playerManeuverDistance,
+            playerPos + awayFromAi * playerManeuverDistance,
+            playerPos - awayFromAi * playerManeuverDistance,
+            playerPos + Vector3.up * playerManeuverDistance * 0.5f,
+            playerPos - Vector3.up * playerManeuverDistance * 0.5f
+        };
+    }
+
+    private float MinimaxRecursive(Vector3 aiPos, Vector3 aiForward, Vector3 playerPos, int depth, float alpha, float beta, bool isMaximizing)
+    {
+        if (depth == 0)
+            return EvaluatePosition(aiPos, aiForward, playerPos);
 
         if (isMaximizing)
         {
             float maxEval = float.NegativeInfinity;
-            foreach (Vector3 cand in GetCandidatePositions(pos))
+            foreach (Vector3 cand in GetCandidatePositions(aiPos, aiForward, maneuverDistance))
             {
-                float eval = MinimaxRecursive(cand, targetPos, depth - 1, alpha, beta, false);
+                Vector3 heading = (cand - aiPos).normalized;
+                float eval = MinimaxRecursive(cand, heading, playerPos, depth - 1, alpha, beta, false);
                 maxEval = Mathf.Max(maxEval, eval);
                 alpha = Mathf.Max(alpha, eval);
-                if (beta <= alpha) break;
+                if (beta <= alpha)
+                {
+                    alphaBetaCutCount++;
+                    break;
+                }
             }
             return maxEval;
         }
-        else
+
+        float minEval = float.PositiveInfinity;
+        foreach (Vector3 playerMove in GetPlayerCandidatePositions(playerPos, aiPos))
         {
-            float minEval = float.PositiveInfinity;
-            // TODO: Wykorzystać dane z sensoryki/radaru Kamila zamiast bezpośredniej symulacji
-            // Symulacja odpowiedzi gracza (gracz stara się nas mieć przed nosem)
-            // Uproszczony ruch gracza w stronę AI
-            Vector3 simulatedPlayerPos = targetPos + (pos - targetPos).normalized * 10f;
-            
-            float eval = EvaluatePosition(pos, simulatedPlayerPos);
+            float eval = MinimaxRecursive(aiPos, aiForward, playerMove, depth - 1, alpha, beta, true);
             minEval = Mathf.Min(minEval, eval);
             beta = Mathf.Min(beta, eval);
-            
-            return minEval;
+            if (beta <= alpha)
+            {
+                alphaBetaCutCount++;
+                break;
+            }
         }
+        return minEval;
     }
 
-    private float EvaluatePosition(Vector3 pos, Vector3 targetPos)
+    private float EvaluatePosition(Vector3 aiPos, Vector3 aiForward, Vector3 targetPos)
     {
-        float score = 0;
-        float dist = Vector3.Distance(pos, targetPos);
+        float score = 0f;
+        float dist = Vector3.Distance(aiPos, targetPos);
 
-        // 1. Dystans optymalny (80-120 jednostek)
         if (dist > 80f && dist < 120f) score += 50f;
         else score -= Mathf.Abs(dist - 100f) * 0.5f;
 
-        // 2. Kąt burtowy (chcemy być prostopadle do gracza)
-        Vector3 toTarget = (targetPos - pos).normalized;
-        float dot = Vector3.Dot(transform.forward, toTarget);
-        score += (1f - Mathf.Abs(dot)) * 30f;
+        Vector3 forward = aiForward.sqrMagnitude > 0.01f ? aiForward.normalized : transform.forward;
+        Vector3 toTarget = (targetPos - aiPos).normalized;
+        float broadsideDot = Mathf.Abs(Vector3.Dot(forward, toTarget));
+        score += (1f - broadsideDot) * 40f;
 
-        // 3. Sprawdzenie kolizji
-        if (Physics.CheckSphere(pos, 5f)) score -= 100f;
+        Vector3 right = Vector3.Cross(Vector3.up, forward).normalized;
+        float sideExposure = Mathf.Abs(Vector3.Dot(right, toTarget));
+        score += sideExposure * 25f;
+
+        if (ObstacleRegistry.Instance != null && ObstacleRegistry.Instance.IsPositionBlocked(aiPos, 5f))
+            score -= 100f;
 
         return score;
     }

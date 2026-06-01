@@ -5,15 +5,55 @@ public class HeavyKineticLauncher : MonoBehaviour
     [SerializeField] private GameObject projectilePrefab;
     [SerializeField] private Transform muzzle;
     [SerializeField] private float cooldown = 2.5f;
+    [SerializeField] private float playerProjectileDamage = 120f;
 
     private float lastShot = -99f;
+    private Rigidbody parentRb;
+
+    public Vector3 MuzzlePosition => muzzle != null ? muzzle.position : transform.position;
+
+    void Start()
+    {
+        parentRb = GetComponentInParent<Rigidbody>();
+        if (muzzle == null)
+            muzzle = transform.Find("WeaponMuzzle");
+    }
+
+    public float GetProjectileSpeed()
+    {
+        if (projectilePrefab != null)
+        {
+            var proj = projectilePrefab.GetComponent<HeavyKineticProjectile>();
+            if (proj != null) return proj.GetInitialSpeed();
+        }
+        return 40f;
+    }
 
     public void TryFire()
     {
         if (Time.time - lastShot < cooldown) return;
         lastShot = Time.time;
 
-        var go = Instantiate(projectilePrefab, muzzle.position, muzzle.rotation);
-        go.GetComponent<HeavyKineticProjectile>().Launch(muzzle.forward);
+        Transform ownerTransform = parentRb != null ? parentRb.transform : transform;
+        Vector3 spawnPos = MuzzlePosition;
+        Vector3 shootDirection = muzzle != null ? muzzle.forward : transform.forward;
+
+        if (ownerTransform.CompareTag("Player"))
+            shootDirection = PlayerWeaponAim.GetDirection(spawnPos, ownerTransform);
+
+        Vector3 shooterVelocity = parentRb != null ? parentRb.linearVelocity : Vector3.zero;
+
+        var go = Instantiate(projectilePrefab, spawnPos, Quaternion.LookRotation(shootDirection));
+        go.GetComponent<HeavyKineticProjectile>().Launch(
+            shootDirection,
+            shooterVelocity,
+            ownerTransform,
+            playerProjectileDamage);
+
+        Collider projCollider = go.GetComponent<Collider>();
+        if (projCollider == null) return;
+
+        foreach (Collider c in ownerTransform.GetComponentsInChildren<Collider>())
+            Physics.IgnoreCollision(projCollider, c);
     }
 }

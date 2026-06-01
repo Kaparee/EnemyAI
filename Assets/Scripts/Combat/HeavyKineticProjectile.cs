@@ -9,8 +9,10 @@ public class HeavyKineticProjectile : MonoBehaviour
     [SerializeField] private float damage = 120f;
 
     private Rigidbody rb;
-    private float timer = 0f;
-    private bool hitEnemy = false;
+    private float timer;
+    private bool hitTarget;
+    private Transform ownerRoot;
+    private float activeDamage;
 
     void Awake()
     {
@@ -19,31 +21,55 @@ public class HeavyKineticProjectile : MonoBehaviour
         rb.linearDamping = dragInSpace;
         rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
         rb.mass = 80f;
+
+        CapsuleCollider capsule = GetComponent<CapsuleCollider>();
+        if (capsule != null)
+        {
+            capsule.center = Vector3.zero;
+            capsule.radius = 0.25f;
+            capsule.height = 1.2f;
+            capsule.direction = 2;
+        }
+
+        activeDamage = damage;
     }
 
-    public void Launch(Vector3 direction)
+    public float GetInitialSpeed() => initialSpeed;
+
+    public void Launch(Vector3 direction, Vector3 shooterVelocity = default, Transform owner = null, float damageOverride = -1f)
     {
+        ownerRoot = owner != null ? owner.root : null;
+        activeDamage = damageOverride > 0f ? damageOverride : damage;
+        rb.linearVelocity = shooterVelocity;
         rb.AddForce(direction.normalized * initialSpeed, ForceMode.VelocityChange);
     }
 
     void FixedUpdate()
     {
         rb.linearDamping = dragInSpace;
-
         timer += Time.fixedDeltaTime;
-        if (timer >= selfDestructTimeout && !hitEnemy)
-        {
+        if (timer >= selfDestructTimeout && !hitTarget)
             Destroy(gameObject);
-        }
     }
 
     void OnCollisionEnter(Collision col)
     {
-        //if (col.gameObject.CompareTag("Enemy"))
-        //{
-        //    hitEnemy = true;
-        //    col.gameObject.GetComponent<EnemyHealth>()?.TakeDamage(damage);
-        //}
-        //Destroy(gameObject);
+        if (ownerRoot != null && col.transform.root == ownerRoot)
+            return;
+
+        hitTarget = true;
+
+        ShipStats stats = col.collider.GetComponentInParent<ShipStats>();
+        if (stats != null && col.contactCount > 0)
+        {
+            stats.TakeZonedDamage(activeDamage, col.GetContact(0).normal);
+            Destroy(gameObject);
+            return;
+        }
+
+        if (col.rigidbody != null && col.contactCount > 0)
+            col.rigidbody.AddForceAtPosition(rb.linearVelocity * 100f, col.GetContact(0).point, ForceMode.Impulse);
+
+        Destroy(gameObject);
     }
 }
