@@ -149,8 +149,9 @@ public class ChunkManager : MonoBehaviour
         if (currentSectorObject != null) {
             Destroy(currentSectorObject);
         }
-        if (sector == null) {
-            Debug.LogError("<color=red>ChunkManager: Brak przypisanego prefaba sektora!</color>");
+        if (sector == null)
+        {
+            Debug.LogError("<color=red>Brak przypisanego prefaba sektora w ChunkManager!</color>");
             return;
         }
 

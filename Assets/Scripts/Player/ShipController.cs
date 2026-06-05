@@ -18,7 +18,7 @@ public class ShipController : MonoBehaviour
     [Header("STEROWANIE")]
     [SerializeField] private float fppMouseSensitivity = 0.5f;
     [SerializeField] private float verticalAccelerationTime = 0.4f;
-    public float forwardAccelerationTime = 1.0f; // Czas rozpędzania do przodu/tyłu
+    public float forwardAccelerationTime = 1.0f; // czas reakcji przyspieszenia
     public float maxOverallSpeed = 20f;
 
     [Header("WIZUALNY PRZECHYL")]
@@ -60,7 +60,7 @@ public class ShipController : MonoBehaviour
 
     void Update()
     {
-        // 1. Zmiana kamery
+        // 1. Zmiana widoku kamery
         if (Keyboard.current != null && Keyboard.current.vKey.wasPressedThisFrame)
         {
             isFPPMode = !isFPPMode;
@@ -71,7 +71,7 @@ public class ShipController : MonoBehaviour
         if (Mouse.current != null && !isInteractingWithUI)
             _accumulatedMouseDelta += Mouse.current.delta.ReadValue();
 
-        // 2. Zmiana trybu lotu
+        // 2. Wlacz/wylacz asystenta lotu
         if (Keyboard.current != null && Keyboard.current.xKey.wasPressedThisFrame)
         {
             flightAssist = !flightAssist;
@@ -79,7 +79,7 @@ public class ShipController : MonoBehaviour
         }
 
 
-        // 3. Obsługa wagi i ładunku
+        // 3. Sprawdzamy czy zmieścimy ładunek
         float currentLoadPercent = stats.GetMaxCargo() > 0 ? stats.CurrentCargo / stats.GetMaxCargo() : 0f;
         if (Mathf.Abs(currentLoadPercent - previousLoadPercent) > 0.001f)
         {
@@ -87,7 +87,7 @@ public class ShipController : MonoBehaviour
             previousLoadPercent = currentLoadPercent;
         }
 
-        // 4. strzelanie
+        // 4. Obsługa strzału z wyrzutni
         if (Mouse.current.leftButton.wasPressedThisFrame && launcher != null)
             launcher.TryFire();
     }
@@ -139,7 +139,7 @@ public class ShipController : MonoBehaviour
             rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
     }
 
-    // Asystent lotu tylko dla lotu naprzod
+    // Automatyczne hamowanie w celu stabilizacji lotu
     private void ApplyDirectionalDamping()
     {
         Vector3 localVelocity = transform.InverseTransformDirection(rb.linearVelocity);
@@ -244,7 +244,7 @@ public class ShipController : MonoBehaviour
         if (stats.CurrentEnergy <= stats.LowFuelThreshold && !lowFuelWarningTriggered && stats.CurrentEnergy > 0)
         {
             lowFuelWarningTriggered = true;
-            Debug.LogWarning("<color=red><b>UWAGA: Niski poziom paliwa!</b></color>");
+            Debug.LogWarning("<color=red><b>UWAGA: Niski stan paliwa w zbiornikach!</b></color>");
         }
         else if (stats.CurrentEnergy > stats.LowFuelThreshold && lowFuelWarningTriggered)
         {

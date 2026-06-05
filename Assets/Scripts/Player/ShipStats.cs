@@ -62,7 +62,7 @@ public class ShipStats : MonoBehaviour {
     public void UpdateMaxCargo(float multiplier) 
     {
         MaxCargo = baseCargoCapacity * multiplier;
-        Debug.Log($"[ShipStats] Nowy limit ładowni: {MaxCargo}");
+        Debug.Log($"[ShipStats] Zwiększono pojemność ładowni do {MaxCargo} ton.");
     }
 
     
@@ -92,7 +92,7 @@ public class ShipStats : MonoBehaviour {
         if (damage > 0f)
         {
             CurrentHP = CurrentHP - damage;
-            Debug.Log("Ustawiono wartość HP na: " + CurrentHP);
+            Debug.Log("Otrzymano obrażenia! HP wynosi teraz: " + CurrentHP);
             if (CurrentHP <= 0f)
             {
                 CurrentHP = 0f;
@@ -101,18 +101,18 @@ public class ShipStats : MonoBehaviour {
                     IsDestroyed = true;
                     HandleDestruction();
                 }
-                Debug.Log("Statek zniszczony!");
+                Debug.Log("Statek został całkowicie zniszczony.");
             }
         }
         else
         {
-            Debug.Log("Nie możesz zadać statkowi mniej niż 0 dmg");
+            Debug.Log("Wartość otrzymanych obrażeń musi być dodatnia.");
         }
     }
 
     private void HandleDestruction()
     {
-        Debug.Log("<color=red>STATEK ZNISZCZONY!</color>");
+        Debug.Log("<color=red>[ShipStats] Statek zniszczony!</color>");
 
         EnemyAI enemyAI = GetComponent<EnemyAI>();
         if (enemyAI != null)
@@ -129,17 +129,17 @@ public class ShipStats : MonoBehaviour {
         if (amount > 0f) {
             if (CurrentHP + amount > MaxHP) {
                 CurrentHP = MaxHP;
-                Debug.Log("Statek naprawiony!");
+                Debug.Log("HP przywrócone do maksymalnego poziomu.");
                 IsDestroyed = false;
             }
             else {
                 CurrentHP += amount;
                 IsDestroyed = false;
             }
-            Debug.Log("Ustawiono wartość HP na: " + CurrentHP);
+            Debug.Log("Naprawiono poszycie. Aktualne HP: " + CurrentHP);
         }
         else {
-            Debug.Log("Nie możesz uleczyć statku za mniej niż 0HP");
+            Debug.Log("Wartość leczenia musi być dodatnia.");
         }
     }
 
@@ -147,14 +147,14 @@ public class ShipStats : MonoBehaviour {
         if (amount > 0f) {
             if (CurrentEnergy < amount) {
                 CurrentEnergy = 0;
-                Debug.Log("Statek nie ma paliwa!");
+                Debug.Log("Brak paliwa!");
             }
             else {
                 CurrentEnergy -= amount;
             }
         }
         else {
-            Debug.Log("Nie możesz spalić mniej niż 0 jednostek paliwa");
+            Debug.Log("Zużycie energii/paliwa musi być wartością dodatnią.");
         }
     }
 
@@ -162,15 +162,15 @@ public class ShipStats : MonoBehaviour {
         if (amount > 0f) {
             if (CurrentEnergy + amount > MaxEnergy) {
                 CurrentEnergy = MaxEnergy;
-                Debug.Log("Statek zatankowany na full!");
+                Debug.Log("Paliwo zatankowane do pełna.");
             }
             else {
                 CurrentEnergy += amount;
             }
-            Debug.Log("Ustawiono wartość Paliwa na: " + CurrentEnergy);
+            Debug.Log("Uzyskano paliwo. Aktualny stan: " + CurrentEnergy);
         }
         else {
-            Debug.Log("Nie możesz zatankować statku za mniej niż 0 jednostek paliwowych");
+            Debug.Log("Wartość tankowania musi być dodatnia.");
         }
     }
 
@@ -193,35 +193,35 @@ public class ShipStats : MonoBehaviour {
 
     public void SetHP(float amount) {
         CurrentHP = amount;
-        Debug.Log("Poprawnie przypisano " + amount + " HP");
+        Debug.Log("Zastosowano kod na HP: " + amount);
     }
     public void SetCargo(float amount) {
         CurrentCargo = amount;
-        Debug.Log("Poprawnie przypisano " + amount + " Cargo");
+        Debug.Log("Kod na " + amount + " Cargo wpisany");
     }
     public void SetMaxHP(float amount) {
         MaxHP = amount;
-        Debug.Log("Poprawnie przypisano " + amount + " MaxHP");
+        Debug.Log("Kod na " + amount + " MaxHP wpisany");
     }
     public void SetEnergy(float amount) {
         CurrentEnergy = amount;
-        Debug.Log("Poprawnie przypisano " + amount + " Paliwa");
+        Debug.Log("Zastosowano kod na paliwo: " + amount);
     }
     public void SetMaxEnergy(float amount) {
         MaxEnergy = amount;
-        Debug.Log("Poprawnie przypisano " + amount + " MaxPaliwa");
+        Debug.Log("Zastosowano kod na maksymalne paliwo: " + amount);
     }
 
 
     public void SetHPCommand(string[] args) {
         if (args.Length > 0) {
             int amount = 0;
-            // Parsowanie ze stringa na inta, jak nie jest liczba po słowie kluczowym, idzie do else
+            // Magiczne parsy - jak nie wklepiesz cyferki, to leci do else'a
             if (Int32.TryParse(args[0], out amount)) {
                 SetHP(amount);
             }
             else {
-                Debug.Log("Coś poszło nie tak, źle wpisałeś komende");
+                Debug.Log("Nieprawidłowa wartość argumentu. Użyj liczby.");
             }
         }
     }
@@ -232,7 +232,7 @@ public class ShipStats : MonoBehaviour {
                 SetMaxHP(amount);
             }
             else {
-                Debug.Log("Coś poszło nie tak, źle wpisałeś komende");
+                Debug.Log("Nieprawidłowa wartość argumentu. Użyj liczby.");
             }
         }
     }
@@ -243,7 +243,7 @@ public class ShipStats : MonoBehaviour {
                 SetEnergy(amount);
             }
             else {
-                Debug.Log("Coś poszło nie tak, źle wpisałeś komende");
+                Debug.Log("Nieprawidłowa wartość argumentu. Użyj liczby.");
             }
         }
     }
@@ -254,15 +254,15 @@ public class ShipStats : MonoBehaviour {
                 SetMaxEnergy(amount);
             }
             else {
-                Debug.Log("Coś poszło nie tak, źle wpisałeś komende");
+                Debug.Log("Nieprawidłowa wartość argumentu. Użyj liczby.");
             }
         }
     }
     public void GetHPCommand(string[] args) {
-        Debug.Log("Aktualny stan HP wynosi: " + CurrentHP + "/" + MaxHP);
+        Debug.Log("Status statku (HP): " + CurrentHP + "/" + MaxHP);
     }
     public void GetEnergyCommand(string[] args) {
-        Debug.Log("Aktualny stan paliwa wynosi: " + CurrentEnergy + "/" + MaxEnergy);
+        Debug.Log("Status statku (Paliwo): " + CurrentEnergy + "/" + MaxEnergy);
     }
 
     public List<string> GetUnlockedUpgradesList()
@@ -283,7 +283,7 @@ public class ShipStats : MonoBehaviour {
         if (upgrades == null) return;
 
         purchasedUpgrades = new List<string>(upgrades);
-        Debug.Log("Wczytano ulepszenia w ShipStats: " + purchasedUpgrades.Count);
+        Debug.Log("Załadowano ulepszenia: " + purchasedUpgrades.Count + " szt.");
     }
 
     public float GetMaxHP() { return MaxHP; }

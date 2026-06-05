@@ -32,14 +32,22 @@ public class HeavyKineticLauncher : MonoBehaviour
     public void TryFire()
     {
         if (Time.time - lastShot < cooldown) return;
-        lastShot = Time.time;
 
         Transform ownerTransform = parentRb != null ? parentRb.transform : transform;
         Vector3 spawnPos = MuzzlePosition;
         Vector3 shootDirection = muzzle != null ? muzzle.forward : transform.forward;
 
         if (ownerTransform.CompareTag("Player"))
+        {
             shootDirection = PlayerWeaponAim.GetDirection(spawnPos, ownerTransform);
+            
+            // blokada zapobiegająca strzelaniu pod własny statek
+            float angleDown = Vector3.Angle(shootDirection, -ownerTransform.up);
+            if (angleDown < 45f)
+                return;
+        }
+
+        lastShot = Time.time;
 
         Vector3 shooterVelocity = parentRb != null ? parentRb.linearVelocity : Vector3.zero;
 

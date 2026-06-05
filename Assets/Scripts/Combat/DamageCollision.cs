@@ -24,7 +24,7 @@ public class DamageCollision : MonoBehaviour
                 }
                 else
                 {
-                    Debug.LogWarning("DamageCollision: Próba wywołania TriggerGameOver, ale GameManager.Instance jest nullem!");
+                    Debug.LogWarning("DamageCollision: Brak GameManager'a w scenie!");
                 }
             }
         }

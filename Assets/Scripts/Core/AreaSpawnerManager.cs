@@ -62,7 +62,7 @@ public class AreaSpawnerManager : MonoBehaviour
 
         float minedPercentage = (float)emptyCount / totalAsteroids;
 
-        Debug.Log($"Belt: {beltData.beltCenter} | Mined: {emptyCount}/{totalAsteroids} ({minedPercentage * 100}%)");
+        Debug.Log($"Pas asteroid w {beltData.beltCenter} wydobyty w: {minedPercentage * 100}% ({emptyCount}/{totalAsteroids}). Zadanie wykonane.");
         if (minedPercentage >= 0.80f && !beltData.respawnTriggered) {
             if (ChunkManager.Instance != null) {
                 ChunkManager.Instance.TrySpawnNewBeltGlobal();

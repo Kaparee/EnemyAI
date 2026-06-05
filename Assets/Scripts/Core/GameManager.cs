@@ -64,12 +64,12 @@ public class GameManager : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("Drugi GameManager został zniszczony (duplikat)");
+            Debug.LogWarning("Wykryto dodatkową instancję GameManager - usuwanie duplikatu.");
             Destroy(gameObject);
             return;
         }
 
-        // Próba automatycznego znalezienia gracza jeśli nie jest przypisany
+        // Wyszukiwanie gracza w scenie w razie braku przypisania
         if (player == null) {
             GameObject p = GameObject.FindGameObjectWithTag("Player");
             if (p != null) player = p;
@@ -96,7 +96,7 @@ public class GameManager : MonoBehaviour
             notificationText.color = color;
             notificationText.gameObject.SetActive(true);
 
-            // Wyłączamy napis po 3 sekundach
+            // Wyłączenie notyfikacji po określonym czasie
             CancelInvoke("HideNotification"); 
             Invoke("HideNotification", 8f);
         }
@@ -121,7 +121,7 @@ public class GameManager : MonoBehaviour
     {
         if (currentState == newState) return;
         currentState = newState;
-        Debug.Log($"<color=yellow>GameState zmieniony na: <b>{newState}</b></color>");
+        Debug.Log($"<color=yellow>[GameManager] Zmiana stanu gry na: <b>{newState}</b></color>");
 
         if (newState == GameState.Exploration || newState == GameState.Fighting || newState == GameState.Mining)
         {
@@ -152,7 +152,7 @@ public class GameManager : MonoBehaviour
     {
         Time.timeScale = 1f;
 
-        // Jeśli wciąż null, spróbuj znaleźć
+        // Upewniamy się, że referencja do gracza i jego statystyk istnieje przed respawnem
         if (player == null) {
             player = GameObject.FindGameObjectWithTag("Player");
         }

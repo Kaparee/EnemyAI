@@ -24,8 +24,7 @@ public class InteractableObject : MonoBehaviour {
                 manager.OnObjectInteracted(parentArea, myBelt);
             }
 
-            //Destroy(gameObject);
-            Debug.Log("Dotknąłeś asteroide :) UwU");
+            Debug.Log("Kolizja z asteroidą! Ostrożnie z manewrami.");
         }
     }
 
@@ -66,7 +65,7 @@ public class InteractableObject : MonoBehaviour {
             }
 
             Destroy(gameObject);
-            Debug.Log("Obiekt asteroidy usunięty z głównej sceny");
+            Debug.Log("Asteroida zniszczona poza obszarem sektora.");
         }
     }
 }

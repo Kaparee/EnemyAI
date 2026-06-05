@@ -32,6 +32,21 @@ public class HeavyKineticProjectile : MonoBehaviour
         }
 
         activeDamage = damage;
+
+        // ustawienie koloru i parametrów śladu pocisku (zamiast różowego)
+        TrailRenderer trail = GetComponent<TrailRenderer>();
+        if (trail != null)
+        {
+            trail.material = new Material(Shader.Find("Sprites/Default"));
+            
+            // dynamiczny, pomarańczowy ogon pocisku
+            trail.startColor = new Color(1f, 0.6f, 0.1f, 1.0f);
+            trail.endColor = new Color(1f, 0.2f, 0f, 0.0f);
+            
+            trail.startWidth = 0.3f;
+            trail.endWidth = 0.05f;
+            trail.time = 0.4f; // szybkie wygaszanie
+        }
     }
 
     public float GetInitialSpeed() => initialSpeed;

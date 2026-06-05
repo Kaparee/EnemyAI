@@ -14,6 +14,9 @@ public class Turret : WeaponBase
     public Transform firePoint;
     public float projectileDamage = 13f;
 
+    [Header("Celność i Balans")]
+    [SerializeField] private float accuracySpread = 3f;
+
     private Vector3? aimPointOverride;
     private Rigidbody parentRb;
 
@@ -22,6 +25,14 @@ public class Turret : WeaponBase
         parentRb = GetComponentInParent<Rigidbody>();
         if (turretHead == null) turretHead = transform;
         if (firePoint == null) firePoint = turretHead;
+
+        // Staggerowanie strzałów wieżyczek, aby nie strzelały jednocześnie
+        fireRate = 0.25f; // spowolnienie szybkostrzelności do 0.25 strzałów na sekundę
+        
+        Turret[] siblings = transform.root.GetComponentsInChildren<Turret>();
+        int myIndex = System.Array.IndexOf(siblings, this);
+        float stagger = siblings.Length > 1 ? (1f / fireRate) / siblings.Length : 0f;
+        nextFireTime = Time.time + stagger * myIndex;
     }
 
     public void SetAimPoint(Vector3 worldPoint)
@@ -46,7 +57,8 @@ public class Turret : WeaponBase
         if (HasValidTarget() && Time.time >= nextFireTime)
         {
             Fire();
-            nextFireTime = Time.time + (1f / fireRate);
+            // Drobne losowe przesunięcie czasu strzału dla naturalnego efektu
+            nextFireTime = Time.time + (1f / fireRate) + Random.Range(0f, 0.5f);
         }
     }
 
@@ -77,6 +89,10 @@ public class Turret : WeaponBase
 
         Vector3 aimPoint = aimPointOverride ?? (target != null ? target.position : firePoint.position + firePoint.forward * 100f);
         Vector3 shootDirection = (aimPoint - firePoint.position).normalized;
+
+        // Dodanie rozrzutu celności (spread)
+        Vector3 randomSpread = Random.insideUnitSphere * Mathf.Tan(accuracySpread * Mathf.Deg2Rad);
+        shootDirection = (shootDirection + randomSpread).normalized;
 
         GameObject projGo = Instantiate(projectilePrefab, firePoint.position, Quaternion.LookRotation(shootDirection));
 
