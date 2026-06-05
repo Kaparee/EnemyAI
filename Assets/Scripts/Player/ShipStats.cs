@@ -5,6 +5,8 @@ using UnityEngine;
 using UnityEngine.Events;
 
 public class ShipStats : MonoBehaviour {
+    public static event Action<Vector3, float, bool> OnDamageDealt;
+
     public float CurrentHP { get; private set; }
     public float CurrentEnergy { get; private set; }
     public float CurrentCargo { get; private set; }
@@ -92,6 +94,7 @@ public class ShipStats : MonoBehaviour {
         if (damage > 0f)
         {
             CurrentHP = CurrentHP - damage;
+            OnDamageDealt?.Invoke(transform.position, damage, CompareTag("Player"));
             Debug.Log("Otrzymano obrażenia! HP wynosi teraz: " + CurrentHP);
             if (CurrentHP <= 0f)
             {

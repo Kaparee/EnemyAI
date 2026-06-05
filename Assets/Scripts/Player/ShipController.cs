@@ -48,6 +48,10 @@ public class ShipController : MonoBehaviour
 
         if (GetComponent<PlayerAimHud>() == null)
             gameObject.AddComponent<PlayerAimHud>();
+        if (GetComponent<CombatHUD>() == null)
+            gameObject.AddComponent<CombatHUD>();
+        if (GetComponent<MinimapHUD>() == null)
+            gameObject.AddComponent<MinimapHUD>();
 
         rb = GetComponent<Rigidbody>();
         stats = GetComponent<ShipStats>();

@@ -6,7 +6,7 @@ public class CameraTPP : MonoBehaviour
     public Transform target;
 
     [Header("Target Offset")]
-    public Vector3 targetOffset = new Vector3(0, 0f, 0);
+    public Vector3 targetOffset = new Vector3(0, 5f, 0);
 
     [Header("Orbit Settings")]
     [SerializeField] private float sensitivity = 0.5f;
