@@ -20,6 +20,12 @@ public class HeavyKineticLauncher : MonoBehaviour
             muzzle = transform.Find("WeaponMuzzle");
     }
 
+    public float GetReloadProgress()
+    {
+        if (cooldown <= 0f) return 1f;
+        return Mathf.Clamp01((Time.time - lastShot) / cooldown);
+    }
+
     public float GetProjectileSpeed()
     {
         if (projectilePrefab != null)
@@ -40,9 +46,12 @@ public class HeavyKineticLauncher : MonoBehaviour
 
         Vector3 spawnPos = MuzzlePosition;
         Vector3 shootDirection = muzzle != null ? muzzle.forward : transform.forward;
+        float dynamicDamage = playerProjectileDamage;
 
         if (ownerTransform.CompareTag("Player"))
         {
+            dynamicDamage = (stats.GetMaxHP() * 0.85f) / 6f;
+
             shootDirection = PlayerWeaponAim.GetDirection(spawnPos, ownerTransform);
             
             float angleDown = Vector3.Angle(shootDirection, -ownerTransform.up);
@@ -59,7 +68,7 @@ public class HeavyKineticLauncher : MonoBehaviour
             shootDirection,
             shooterVelocity,
             ownerTransform,
-            playerProjectileDamage);
+            dynamicDamage);
 
         Collider projCollider = go.GetComponent<Collider>();
         if (projCollider == null) return;

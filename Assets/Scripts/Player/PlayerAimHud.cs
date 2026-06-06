@@ -7,6 +7,7 @@ public class PlayerAimHud : MonoBehaviour
     [SerializeField] private float previewDistance = 350f;
 
     private RectTransform trajectoryDot;
+    private Canvas canvas;
 
     void Awake()
     {

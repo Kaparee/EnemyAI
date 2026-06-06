@@ -14,6 +14,10 @@ public class CombatHUD : MonoBehaviour
     private TextMeshProUGUI enemyHPText;
     private GameObject enemyHealthRoot;
 
+    private HeavyKineticLauncher playerLauncher;
+    private Image weaponReloadFill;
+    private TextMeshProUGUI weaponReloadText;
+
     private float nextEnemySearchTime;
     private ShipStats cachedEnemyStats;
 
@@ -33,6 +37,7 @@ public class CombatHUD : MonoBehaviour
     {
         UpdatePlayerHealth();
         UpdateEnemyHealth();
+        UpdateWeaponReload();
     }
 
     private void OnDestroy()
@@ -62,6 +67,29 @@ public class CombatHUD : MonoBehaviour
 
         if (hasEnemy)
             SetHealthBar(cachedEnemyStats, enemyHealthFill, enemyHPText, ref currentEnemyHpDisplayed, ref enemyHpVelocity);
+    }
+
+    private void UpdateWeaponReload()
+    {
+        if (playerLauncher == null)
+            playerLauncher = GetComponent<HeavyKineticLauncher>();
+
+        if (playerLauncher == null || weaponReloadFill == null)
+            return;
+
+        float progress = playerLauncher.GetReloadProgress();
+        weaponReloadFill.fillAmount = progress;
+
+        if (progress >= 1f)
+        {
+            weaponReloadFill.color = new Color(0.1f, 0.9f, 0.1f, 0.85f); // Green when ready
+            weaponReloadText.text = "READY";
+        }
+        else
+        {
+            weaponReloadFill.color = new Color(1f, 1f, 1f, 0.35f); // Semi-transparent white
+            weaponReloadText.text = $"{Mathf.RoundToInt(progress * 100f)}%";
+        }
     }
 
     private ShipStats FindNearestEnemyStats()
@@ -149,6 +177,17 @@ public class CombatHUD : MonoBehaviour
             out enemyHealthFill,
             out enemyHPText,
             out enemyHealthRoot);
+
+        CreateHealthBar(
+            "WeaponReload",
+            SharedUIManager.Instance.MainCanvas.transform,
+            new Vector2(1f, 0f), // Bottom-right corner
+            new Vector2(1f, 0f), // Pivot bottom-right
+            new Vector2(-40f, 260f), // Symmetrical offset above the minimap (40 + 200 + 20 spacing)
+            "WEAPON RELOAD",
+            out weaponReloadFill,
+            out weaponReloadText,
+            out _);
     }
 
     private static void CreateHealthBar(
