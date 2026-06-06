@@ -69,7 +69,6 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        // Wyszukiwanie gracza w scenie w razie braku przypisania
         if (player == null) {
             GameObject p = GameObject.FindGameObjectWithTag("Player");
             if (p != null) player = p;
@@ -96,7 +95,6 @@ public class GameManager : MonoBehaviour
             notificationText.color = color;
             notificationText.gameObject.SetActive(true);
 
-            // Wyłączenie notyfikacji po określonym czasie
             CancelInvoke("HideNotification"); 
             Invoke("HideNotification", 8f);
         }
@@ -152,7 +150,6 @@ public class GameManager : MonoBehaviour
     {
         Time.timeScale = 1f;
 
-        // Upewniamy się, że referencja do gracza i jego statystyk istnieje przed respawnem
         if (player == null) {
             player = GameObject.FindGameObjectWithTag("Player");
         }

@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Pozwala na stworzenie bazy danych z poziomu menu Unity
 [CreateAssetMenu(fileName = "ResourceDatabase", menuName = "Mining/ResourceDatabase")]
 public class ResourceDatabase : ScriptableObject
 {
@@ -13,8 +12,6 @@ public class ResourceDatabase : ScriptableObject
     {
 
         float totalWeight = 0f;
-
-        
 
         foreach (ResourceDefinition res in Resources) {
             totalWeight += res.weightsPerStage[sectorStage];

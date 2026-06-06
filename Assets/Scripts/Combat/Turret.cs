@@ -26,15 +26,22 @@ public class Turret : WeaponBase
         if (turretHead == null) turretHead = transform;
         if (firePoint == null) firePoint = turretHead;
 
-        // Staggerowanie strzałów wieżyczek, aby nie strzelały jednocześnie
-        fireRate = 0.25f; // spowolnienie szybkostrzelności do 0.25 strzałów na sekundę
-        
-        Turret[] siblings = transform.root.GetComponentsInChildren<Turret>();
-        int myIndex = System.Array.IndexOf(siblings, this);
-        float stagger = siblings.Length > 1 ? (1f / fireRate) / siblings.Length : 0f;
-        nextFireTime = Time.time + stagger * myIndex;
-    }
+        if (!CompareTag("Player") && (transform.parent == null || !transform.parent.CompareTag("Player")))
+        {
+            GameObject player = GameObject.FindGameObjectWithTag("Player");
+            if (player != null)
+            {
+                ShipStats pStats = player.GetComponent<ShipStats>();
+                if (pStats != null) projectileDamage = pStats.GetMaxHP() / 6f;
 
+                HeavyKineticLauncher pLauncher = player.GetComponentInChildren<HeavyKineticLauncher>();
+                if (pLauncher != null && pLauncher.Cooldown > 0f)
+                {
+                    fireRate = (1f / pLauncher.Cooldown) * 0.85f;
+                }
+            }
+        }
+    }
     public void SetAimPoint(Vector3 worldPoint)
     {
         aimPointOverride = worldPoint;
@@ -54,11 +61,17 @@ public class Turret : WeaponBase
     {
         AimAtTargetManually();
 
-        if (HasValidTarget() && Time.time >= nextFireTime)
+        if (HasValidTarget())
         {
-            Fire();
-            // Drobne losowe przesunięcie czasu strzału dla naturalnego efektu
-            nextFireTime = Time.time + (1f / fireRate) + Random.Range(0f, 0.5f);
+            if (Time.time >= nextFireTime)
+            {
+                Fire();
+                nextFireTime = Time.time + (1f / fireRate) + Random.Range(0f, 0.15f);
+            }
+        }
+        else
+        {
+            nextFireTime = Time.time + 0.5f; 
         }
     }
 
@@ -90,7 +103,6 @@ public class Turret : WeaponBase
         Vector3 aimPoint = aimPointOverride ?? (target != null ? target.position : firePoint.position + firePoint.forward * 100f);
         Vector3 shootDirection = (aimPoint - firePoint.position).normalized;
 
-        // Dodanie rozrzutu celności (spread)
         Vector3 randomSpread = Random.insideUnitSphere * Mathf.Tan(accuracySpread * Mathf.Deg2Rad);
         shootDirection = (shootDirection + randomSpread).normalized;
 

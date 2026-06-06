@@ -10,32 +10,34 @@ public static class PlayerWeaponAim
 
     public static bool TryGetAimPoint(Vector3 muzzlePos, Transform owner, float maxDistance, out Vector3 aimPoint, out Vector3 direction)
     {
-        aimPoint = muzzlePos + Vector3.forward * maxDistance;
-        direction = Vector3.forward;
-
         if (Camera.main == null)
+        {
+            aimPoint = muzzlePos + owner.forward * maxDistance;
+            direction = owner.forward;
             return false;
+        }
 
         Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-        direction = ray.direction;
         aimPoint = ray.GetPoint(maxDistance);
 
         RaycastHit[] hits = Physics.RaycastAll(ray, maxDistance);
         System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+        
+        bool hitSomething = false;
+
         foreach (RaycastHit hit in hits)
         {
             if (IsOwnCollider(hit.collider, owner))
                 continue;
 
             aimPoint = hit.point;
-            direction = (aimPoint - muzzlePos).normalized;
+            hitSomething = true;
             break;
         }
 
-        if (Vector3.Dot(direction, ray.direction) < 0.05f)
-            direction = ray.direction;
+        direction = (aimPoint - muzzlePos).normalized;
 
-        return true;
+        return hitSomething;
     }
 
     private static bool IsOwnCollider(Collider col, Transform owner)

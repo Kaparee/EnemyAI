@@ -6,7 +6,7 @@ public class CameraTPP : MonoBehaviour
     public Transform target;
 
     [Header("Target Offset")]
-    public Vector3 targetOffset = new Vector3(0, 5f, 0);
+    public Vector3 targetOffset = new Vector3(0, 4f, 0);
 
     [Header("Orbit Settings")]
     [SerializeField] private float sensitivity = 0.5f;
@@ -14,7 +14,7 @@ public class CameraTPP : MonoBehaviour
     [SerializeField] private float yMaxLimit = 80f;
 
     [Header("Zoom Settings")]
-    [SerializeField] private float targetDistance = 15.0f;
+    [SerializeField] private float targetDistance = 25.0f;
     [SerializeField] private float minDistance = 5.0f;
     [SerializeField] private float maxDistance = 50.0f;
     [SerializeField] private float zoomSpeed = 2.0f;

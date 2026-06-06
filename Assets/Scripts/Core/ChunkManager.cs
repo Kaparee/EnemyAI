@@ -34,9 +34,9 @@ public class ChunkManager : MonoBehaviour
         Instance = this;
     }
 
-    public int mapCols { get; private set; } = 6;
-    public int mapRows { get; private set; } = 6;
-    [SerializeField] private float sectorSize = 400f;
+    public int mapCols { get; private set; } = 1;
+    public int mapRows { get; private set; } = 1;
+    [SerializeField] private float sectorSize = 900f;
     public float SectorSize => sectorSize;
     [SerializeField] private Transform player;
     public Transform Player => player;
@@ -190,7 +190,8 @@ public class ChunkManager : MonoBehaviour
             int astCount = Random.Range(5, 11);
             for (int a = 0; a < astCount; a++) {
                 AsteroidSavedData ast = new AsteroidSavedData();
-                ast.localPos = new Vector3(Random.Range(-19f, 19f), Random.Range(-19f, 19f), Random.Range(-19f, 19f));
+                // Rozrzucamy asteroidy znacznie szerzej na dużym obszarze
+                ast.localPos = new Vector3(Random.Range(-120f, 120f), Random.Range(-30f, 30f), Random.Range(-120f, 120f));
                 belt.asteroids.Add(ast);
             }
             targetSector.belts.Add(belt);

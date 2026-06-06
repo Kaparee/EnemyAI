@@ -13,4 +13,3 @@ public class ResourceDefinition
     public Sprite Icon;
     public float weight;
 } 
-

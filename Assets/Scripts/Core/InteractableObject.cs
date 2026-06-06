@@ -44,7 +44,7 @@ public class InteractableObject : MonoBehaviour {
 
     void CheckDistance()
     {
-        if (distanceBetweenObjects > 60)
+        if (distanceBetweenObjects > 250)
         {
 
             if (manager != null)

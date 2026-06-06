@@ -11,10 +11,10 @@ public class EnemyAI : MonoBehaviour
 
     [Header("Parametry Fizyczne")]
     public float mass = 40000f;
-    public float mainThrust = 280000f;
-    public float rotationSpeed = 1.8f;
-    public float linearDrag = 1f;
-    public float maxFlightSpeed = 35f;
+    public float mainThrust = 1000000f; 
+    public float rotationSpeed = 1.2f; // Znacznie wolniejszy, naturalny obrót
+    public float linearDrag = 0.1f;
+    public float maxFlightSpeed = 70f;
     public float angularDrag = 1.2f;
     public AnimationCurve accelerationCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
     public float antiDriftFactor = 2f;
@@ -28,8 +28,8 @@ public class EnemyAI : MonoBehaviour
     public float stopDistance = 50f;
     public float patrolStopDistance = 12f;
 
-    [Header("Uzbrojenie burtowe")]
-    public Turret[] sideTurrets;
+    [Header("Uzbrojenie główne")]
+    public Turret mainTurret;
 
     private ShipStats stats;
     private Rigidbody rb;
@@ -50,6 +50,9 @@ public class EnemyAI : MonoBehaviour
     private Vector3 currentTacticalPosition = Vector3.zero;
     private float tacticalRecalcTimer = 0f;
     private EnemyState lastLoggedState = EnemyState.Idle;
+    
+    private float dodgeCooldownTimer = 0f;
+    private Vector3 currentDodgeVector = Vector3.zero;
 
     void Awake()
     {
@@ -66,10 +69,18 @@ public class EnemyAI : MonoBehaviour
         if (tacticalBrain == null) tacticalBrain = gameObject.AddComponent<TacticalBrain>();
         if (radar == null) radar = gameObject.AddComponent<CustomRadarSystem>();
 
-        if (sideTurrets == null || sideTurrets.Length == 0)
-            sideTurrets = GetComponentsInChildren<Turret>();
+        Turret[] allTurrets = GetComponentsInChildren<Turret>();
+        if (allTurrets.Length > 0)
+        {
+            mainTurret = allTurrets[0];
+            for (int i = 1; i < allTurrets.Length; i++)
+            {
+                allTurrets[i].gameObject.SetActive(false);
+                Destroy(allTurrets[i].gameObject);
+            }
+        }
 
-        radar.BindTurrets(sideTurrets);
+        radar.BindTurrets(mainTurret != null ? new Turret[] { mainTurret } : new Turret[0]);
 
         if (stats != null && stats.GetMaxHP() > 0f && stats.CurrentHP <= 0f)
             stats.SetHP(stats.GetMaxHP());
@@ -93,6 +104,27 @@ public class EnemyAI : MonoBehaviour
         {
             GameObject player = GameObject.FindGameObjectWithTag("Player");
             if (player != null) playerTarget = player.transform;
+        }
+
+        if (playerTarget != null)
+        {
+            ShipStats pStats = playerTarget.GetComponent<ShipStats>();
+            ShipController pCtrl = playerTarget.GetComponent<ShipController>();
+
+            if (pStats != null && stats != null)
+            {
+                stats.SetMaxHP(pStats.GetMaxHP() * 0.85f);
+                stats.SetHP(stats.GetMaxHP());
+                
+                mainThrust = pStats.MaxMainThrust * 0.85f;
+                stats.ManeuverForce = pStats.ManeuverForce * 0.85f;
+                stats.RollForce = pStats.RollForce * 0.85f;
+            }
+
+            if (pCtrl != null)
+            {
+                maxFlightSpeed = pCtrl.maxOverallSpeed * 0.85f;
+            }
         }
 
         if (patrolWaypoints.Count == 0)
@@ -183,6 +215,7 @@ public class EnemyAI : MonoBehaviour
     void FixedUpdate()
     {
         UpdateState();
+        HandleEvasion();
         ExecuteState();
         ClampFlightSpeed();
         EnforceSectorBounds();
@@ -193,6 +226,52 @@ public class EnemyAI : MonoBehaviour
         if (maxFlightSpeed <= 0f) return;
         if (rb.linearVelocity.sqrMagnitude > maxFlightSpeed * maxFlightSpeed)
             rb.linearVelocity = rb.linearVelocity.normalized * maxFlightSpeed;
+    }
+
+    private void HandleEvasion()
+    {
+        if (dodgeCooldownTimer > 0f)
+            dodgeCooldownTimer -= Time.fixedDeltaTime;
+
+        if (dodgeCooldownTimer > 1.5f) return;
+
+        Collider[] nearby = Physics.OverlapSphere(transform.position, 80f);
+        foreach (var col in nearby)
+        {
+            HeavyKineticProjectile proj = col.GetComponent<HeavyKineticProjectile>();
+            if (proj != null)
+            {
+                Rigidbody projRb = proj.GetComponent<Rigidbody>();
+                if (projRb != null && projRb.linearVelocity.sqrMagnitude > 100f)
+                {
+                    Vector3 toMe = transform.position - projRb.position;
+                    if (Vector3.Dot(projRb.linearVelocity.normalized, toMe.normalized) > 0.97f)
+                    {
+                        if (Random.value < 0.3f) 
+                        {
+                            PerformDodge(projRb.linearVelocity);
+                        }
+                        else
+                        {
+                            dodgeCooldownTimer = 1.0f; 
+                        }
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
+    private void PerformDodge(Vector3 threatVelocity)
+    {
+        Vector3 dodgeDir = Vector3.Cross(Vector3.up, threatVelocity).normalized;
+        if (Random.value > 0.5f) dodgeDir = -dodgeDir;
+        if (dodgeDir.sqrMagnitude < 0.01f) dodgeDir = transform.right;
+
+        rb.AddForce(dodgeDir * mainThrust * 1.2f, ForceMode.Impulse);
+
+        currentDodgeVector = dodgeDir * 60f;
+        dodgeCooldownTimer = 3.0f;
     }
 
     private void UpdateState()
@@ -310,6 +389,17 @@ public class EnemyAI : MonoBehaviour
             return;
         }
 
+        ShipStats targetStats = playerTarget.GetComponent<ShipStats>();
+        if (targetStats != null && targetStats.IsDestroyed)
+        {
+            AILog.FSM("Gracz zniszczony. Wracam do patrolowania.");
+            playerTarget = null;
+            currentState = EnemyState.Patrol;
+            return;
+        }
+
+        // UWAGA DLA PROJEKTU: Używamy tutaj Twojego własnego algorytmu MINIMAX
+        // Minimax (z odcięciem alpha-beta) przewiduje ruchy gracza i wyznacza optymalną pozycję.
         if (!isCalculatingTactics && Time.time >= tacticalRecalcTimer)
         {
             isCalculatingTactics = true;
@@ -319,14 +409,29 @@ public class EnemyAI : MonoBehaviour
                 {
                     currentTacticalPosition = pos;
                     isCalculatingTactics = false;
-                    tacticalRecalcTimer = Time.time + 1.5f;
+                    tacticalRecalcTimer = Time.time + 1.2f; // Co 1.2s nowa kalkulacja
                 }));
         }
 
+        Vector3 moveDirection;
         if (currentTacticalPosition != Vector3.zero)
-            MoveTowards(currentTacticalPosition, true, stopDistance);
-        else if (playerTarget != null)
-            MoveTowards(playerTarget.position, true, stopDistance);
+        {
+            // Sekret płynnego lotu: Minimax wskazuje nam najlepszy punkt w kosmosie, 
+            // ale my traktujemy go jako wektor KIERUNKOWY, żeby się nie zatrzymywać!
+            moveDirection = (currentTacticalPosition - transform.position).normalized;
+        }
+        else
+        {
+            // Zabezpieczenie, jeśli Minimax jeszcze nie policzył pierwszego ruchu
+            Vector3 directionToPlayer = (playerTarget.position - transform.position).normalized;
+            moveDirection = Vector3.Cross(Vector3.up, directionToPlayer).normalized;
+            if (moveDirection.sqrMagnitude < 0.01f) moveDirection = transform.right;
+        }
+
+        currentDodgeVector = Vector3.Lerp(currentDodgeVector, Vector3.zero, Time.fixedDeltaTime * 2f);
+
+        // Statek bez przerwy odpala silniki w kierunku, który doradził Minimax!
+        MoveTowards(transform.position + moveDirection * 150f + currentDodgeVector, false, 0f);
 
         float projSpeed = GetAverageProjectileSpeed();
         Vector3 leadPosition = tacticalBrain.CalculateLeadingPosition(playerTarget, transform.position, projSpeed);
@@ -366,18 +471,21 @@ public class EnemyAI : MonoBehaviour
         if (avoidance != null)
             direction = avoidance.GetModifiedDirection(direction);
 
-        if (broadsideToTarget && playerTarget != null)
-        {
-            Vector3 toPlayer = (playerTarget.position - transform.position).normalized;
-            Vector3 broadsideForward = Vector3.Cross(Vector3.up, toPlayer).normalized;
-            if (broadsideForward.sqrMagnitude < 0.01f)
-                broadsideForward = transform.forward;
-
-            direction = Vector3.Slerp(direction, broadsideForward, 0.65f).normalized;
-        }
-
         Quaternion targetLookRotation = Quaternion.LookRotation(direction);
         transform.rotation = Quaternion.Slerp(transform.rotation, targetLookRotation, Time.fixedDeltaTime * rotationSpeed);
+
+        // Nakładamy limity przechyłów (pitch i roll) identyczne jak u gracza, 
+        // żeby nie robił fikołków ani beczek w czasie lotu.
+        Vector3 euler = transform.localEulerAngles;
+        float pitch = euler.x;
+        if (pitch > 180f) pitch -= 360f;
+        float roll = euler.z;
+        if (roll > 180f) roll -= 360f;
+
+        pitch = Mathf.Clamp(pitch, -40f, 40f);
+        roll = Mathf.Clamp(roll, -30f, 30f);
+
+        transform.localEulerAngles = new Vector3(pitch, euler.y, roll);
 
         float distance = Vector3.Distance(transform.position, targetPos);
         if (distance > haltDistance)
@@ -399,27 +507,14 @@ public class EnemyAI : MonoBehaviour
 
     private float GetAverageProjectileSpeed()
     {
-        if (sideTurrets == null || sideTurrets.Length == 0) return 40f;
-
-        float sum = 0f;
-        int count = 0;
-        foreach (Turret t in sideTurrets)
-        {
-            if (t == null) continue;
-            sum += t.GetProjectileSpeed();
-            count++;
-        }
-        return count > 0 ? sum / count : 40f;
+        if (mainTurret == null) return 40f;
+        return mainTurret.GetProjectileSpeed();
     }
 
     private void UpdateTurretLeading(Vector3 leadPosition)
     {
-        if (sideTurrets == null) return;
-        foreach (Turret turret in sideTurrets)
-        {
-            if (turret != null)
-                turret.SetAimPoint(leadPosition);
-        }
+        if (mainTurret != null)
+            mainTurret.SetAimPoint(leadPosition);
     }
 
     public void ApplyArchetype(AIArchetype archetype)

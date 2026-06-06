@@ -7,7 +7,6 @@ public class PlayerAimHud : MonoBehaviour
     [SerializeField] private float previewDistance = 350f;
 
     private RectTransform trajectoryDot;
-    private Canvas canvas;
 
     void Awake()
     {
@@ -19,7 +18,7 @@ public class PlayerAimHud : MonoBehaviour
 
     void LateUpdate()
     {
-        if (launcher == null || Camera.main == null || canvas == null)
+        if (launcher == null || Camera.main == null || SharedUIManager.Instance == null || SharedUIManager.Instance.MainCanvas == null)
             return;
 
         Transform owner = launcher.transform;
@@ -43,20 +42,10 @@ public class PlayerAimHud : MonoBehaviour
 
     private void BuildUi()
     {
-        var canvasGo = new GameObject("AimHud");
-        canvasGo.transform.SetParent(transform, false);
+        if (SharedUIManager.Instance == null || SharedUIManager.Instance.MainCanvas == null)
+            return;
 
-        canvas = canvasGo.AddComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = 50;
-
-        var scaler = canvasGo.AddComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920f, 1080f);
-
-        canvasGo.AddComponent<GraphicRaycaster>();
-
-        var root = CreateRect("ReticleRoot", canvas.transform);
+        var root = CreateRect("ReticleRoot", SharedUIManager.Instance.MainCanvas.transform);
         root.anchorMin = new Vector2(0.5f, 0.5f);
         root.anchorMax = new Vector2(0.5f, 0.5f);
         root.pivot = new Vector2(0.5f, 0.5f);

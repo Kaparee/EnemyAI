@@ -8,12 +8,20 @@ public class CombatHUD : MonoBehaviour
     private const float BarHeight = 28f;
 
     private ShipStats playerStats;
-    private Canvas canvas;
     private Image playerHealthFill;
     private Image enemyHealthFill;
     private TextMeshProUGUI playerHPText;
     private TextMeshProUGUI enemyHPText;
     private GameObject enemyHealthRoot;
+
+    private float nextEnemySearchTime;
+    private ShipStats cachedEnemyStats;
+
+    private float currentPlayerHpDisplayed;
+    private float playerHpVelocity;
+
+    private float currentEnemyHpDisplayed;
+    private float enemyHpVelocity;
 
     private void Awake()
     {
@@ -29,8 +37,6 @@ public class CombatHUD : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (canvas != null)
-            Destroy(canvas.gameObject);
     }
 
     private void UpdatePlayerHealth()
@@ -38,19 +44,24 @@ public class CombatHUD : MonoBehaviour
         if (playerStats == null)
             playerStats = GetComponent<ShipStats>();
 
-        SetHealthBar(playerStats, playerHealthFill, playerHPText);
+        SetHealthBar(playerStats, playerHealthFill, playerHPText, ref currentPlayerHpDisplayed, ref playerHpVelocity);
     }
 
     private void UpdateEnemyHealth()
     {
-        ShipStats enemyStats = FindNearestEnemyStats();
-        bool hasEnemy = enemyStats != null && enemyStats.GetMaxHP() > 0f;
+        if (Time.time >= nextEnemySearchTime)
+        {
+            cachedEnemyStats = FindNearestEnemyStats();
+            nextEnemySearchTime = Time.time + 0.25f;
+        }
+
+        bool hasEnemy = cachedEnemyStats != null && cachedEnemyStats.GetMaxHP() > 0f;
 
         if (enemyHealthRoot != null)
             enemyHealthRoot.SetActive(hasEnemy);
 
         if (hasEnemy)
-            SetHealthBar(enemyStats, enemyHealthFill, enemyHPText);
+            SetHealthBar(cachedEnemyStats, enemyHealthFill, enemyHPText, ref currentEnemyHpDisplayed, ref enemyHpVelocity);
     }
 
     private ShipStats FindNearestEnemyStats()
@@ -81,7 +92,7 @@ public class CombatHUD : MonoBehaviour
         return bestStats;
     }
 
-    private static void SetHealthBar(ShipStats stats, Image fill, TextMeshProUGUI text)
+    private void SetHealthBar(ShipStats stats, Image fill, TextMeshProUGUI text, ref float currentDisplayedHp, ref float hpVelocity)
     {
         if (fill == null || text == null)
             return;
@@ -94,12 +105,14 @@ public class CombatHUD : MonoBehaviour
         }
 
         float maxHp = stats.GetMaxHP();
-        float currentHp = Mathf.Clamp(stats.CurrentHP, 0f, maxHp);
-        float hpPercent = currentHp / maxHp;
+        float targetHp = Mathf.Clamp(stats.CurrentHP, 0f, maxHp);
+        
+        currentDisplayedHp = Mathf.SmoothDamp(currentDisplayedHp, targetHp, ref hpVelocity, 0.15f);
 
+        float hpPercent = currentDisplayedHp / maxHp;
         fill.fillAmount = hpPercent;
         fill.color = GetHealthColor(hpPercent);
-        text.text = $"{Mathf.CeilToInt(currentHp)} / {Mathf.CeilToInt(maxHp)}";
+        text.text = $"{Mathf.CeilToInt(currentDisplayedHp)} / {Mathf.CeilToInt(maxHp)}";
     }
 
     private static Color GetHealthColor(float hpPercent)
@@ -112,22 +125,12 @@ public class CombatHUD : MonoBehaviour
 
     private void BuildUi()
     {
-        var canvasGo = new GameObject("CombatHUD");
-        canvasGo.transform.SetParent(transform, false);
-
-        canvas = canvasGo.AddComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = 60;
-
-        var scaler = canvasGo.AddComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920f, 1080f);
-
-        canvasGo.AddComponent<GraphicRaycaster>();
+        if (SharedUIManager.Instance == null || SharedUIManager.Instance.MainCanvas == null)
+            return;
 
         CreateHealthBar(
             "PlayerHealth",
-            canvas.transform,
+            SharedUIManager.Instance.MainCanvas.transform,
             new Vector2(0f, 0f),
             new Vector2(0f, 0f),
             new Vector2(40f, 40f),
@@ -138,7 +141,7 @@ public class CombatHUD : MonoBehaviour
 
         CreateHealthBar(
             "EnemyHealth",
-            canvas.transform,
+            SharedUIManager.Instance.MainCanvas.transform,
             new Vector2(1f, 1f),
             new Vector2(1f, 1f),
             new Vector2(-40f, -40f),

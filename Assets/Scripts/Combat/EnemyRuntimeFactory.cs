@@ -46,9 +46,8 @@ public static class EnemyRuntimeFactory
         root.AddComponent<ObstacleAvoidance>();
         root.AddComponent<CustomRadarSystem>();
 
-        Turret left = CreateTurret(root.transform, "TurretPort", new Vector3(-3f, 0.5f, 0f), projectilePrefab, -90f, 10f);
-        Turret right = CreateTurret(root.transform, "TurretStarboard", new Vector3(3f, 0.5f, 0f), projectilePrefab, -10f, 90f);
-        ai.sideTurrets = new[] { left, right };
+        Turret main = CreateTurret(root.transform, "MainTurret", new Vector3(0f, 0.5f, 1f), projectilePrefab, -90f, 90f);
+        ai.mainTurret = main;
 
         return root;
     }
@@ -73,7 +72,13 @@ public static class EnemyRuntimeFactory
         turret.minYaw = minYaw;
         turret.maxYaw = maxYaw;
         turret.fireRate = 0.5f;
-        turret.projectileDamage = 13f;
+
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player != null && player.GetComponent<ShipStats>() != null)
+            turret.projectileDamage = player.GetComponent<ShipStats>().GetMaxHP() / 6.0f;
+        else
+            turret.projectileDamage = 17f;
+
         return turret;
     }
 }

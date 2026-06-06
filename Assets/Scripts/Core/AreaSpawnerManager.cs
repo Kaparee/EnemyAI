@@ -7,7 +7,7 @@ public class AreaSpawnerManager : MonoBehaviour
     public ResourceDatabase database;
     
     [Header("Area settings")]
-    public Vector3 areaSize = new Vector3(300f, 40f, 80f);
+    public Vector3 areaSize = new Vector3(300f, 100f, 300f);
     public Vector3 worldSpawnSize = new Vector3(500f, 0f, 500f);
 
     [Header("Objects")]
@@ -58,7 +58,6 @@ public class AreaSpawnerManager : MonoBehaviour
     {
         int emptyCount = 0;
         int totalAsteroids = beltData.asteroids.Count;
-
 
         float minedPercentage = (float)emptyCount / totalAsteroids;
 

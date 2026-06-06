@@ -1,6 +1,5 @@
 using UnityEngine;
 
-/// <summary>Pomocnicze logowanie zachowań sztucznej inteligencji przeciwnika.</summary>
 public static class AILog
 {
     private const string Tag = "<color=#88CCFF>[System AI]</color>";

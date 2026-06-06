@@ -17,14 +17,11 @@ public class ShipController : MonoBehaviour
 
     [Header("STEROWANIE")]
     [SerializeField] private float fppMouseSensitivity = 0.5f;
-    [SerializeField] private float verticalAccelerationTime = 0.4f;
-    public float forwardAccelerationTime = 1.0f; // czas reakcji przyspieszenia
+    public float forwardAccelerationTime = 1.0f; 
     public float maxOverallSpeed = 20f;
 
     [Header("WIZUALNY PRZECHYL")]
     [SerializeField] private Transform shipVisualModel;
-    [SerializeField] private float maxRollAngle = 15f;
-    [SerializeField] private float rollSmoothSpeed = 5f;
 
     [Header("STRZELANIE")]
     private HeavyKineticLauncher launcher;
@@ -32,13 +29,9 @@ public class ShipController : MonoBehaviour
     private Rigidbody rb;
     private ShipStats stats;
 
-    private float currentVerticalThrust = 0f;
-    private float verticalVelocityRef = 0f;
-
     public bool isInteractingWithUI = false;
     private float currentForwardThrust = 0f;
     private float forwardVelocityRef = 0f;
-    private float currentVisualRoll = 0f;
     private float previousLoadPercent = -1f;
     private bool lowFuelWarningTriggered = false;
 
@@ -46,12 +39,21 @@ public class ShipController : MonoBehaviour
     {
         launcher = GetComponent<HeavyKineticLauncher>();
 
+        if (GetComponent<SharedUIManager>() == null)
+            gameObject.AddComponent<SharedUIManager>();
+
         if (GetComponent<PlayerAimHud>() == null)
             gameObject.AddComponent<PlayerAimHud>();
         if (GetComponent<CombatHUD>() == null)
             gameObject.AddComponent<CombatHUD>();
         if (GetComponent<MinimapHUD>() == null)
             gameObject.AddComponent<MinimapHUD>();
+        if (GetComponent<GameMessageHUD>() == null)
+            gameObject.AddComponent<GameMessageHUD>();
+        if (GetComponent<PauseMenu>() == null)
+            gameObject.AddComponent<PauseMenu>();
+        if (GetComponent<DeathScreenUI>() == null)
+            gameObject.AddComponent<DeathScreenUI>();
 
         rb = GetComponent<Rigidbody>();
         stats = GetComponent<ShipStats>();
@@ -64,7 +66,6 @@ public class ShipController : MonoBehaviour
 
     void Update()
     {
-        // 1. Zmiana widoku kamery
         if (Keyboard.current != null && Keyboard.current.vKey.wasPressedThisFrame)
         {
             isFPPMode = !isFPPMode;
@@ -75,15 +76,12 @@ public class ShipController : MonoBehaviour
         if (Mouse.current != null && !isInteractingWithUI)
             _accumulatedMouseDelta += Mouse.current.delta.ReadValue();
 
-        // 2. Wlacz/wylacz asystenta lotu
         if (Keyboard.current != null && Keyboard.current.xKey.wasPressedThisFrame)
         {
             flightAssist = !flightAssist;
             UpdatePhysics();
         }
 
-
-        // 3. Sprawdzamy czy zmieścimy ładunek
         float currentLoadPercent = stats.GetMaxCargo() > 0 ? stats.CurrentCargo / stats.GetMaxCargo() : 0f;
         if (Mathf.Abs(currentLoadPercent - previousLoadPercent) > 0.001f)
         {
@@ -91,7 +89,6 @@ public class ShipController : MonoBehaviour
             previousLoadPercent = currentLoadPercent;
         }
 
-        // 4. Obsługa strzału z wyrzutni
         if (Mouse.current.leftButton.wasPressedThisFrame && launcher != null)
             launcher.TryFire();
     }
@@ -137,13 +134,9 @@ public class ShipController : MonoBehaviour
         rb.angularDamping = Mathf.Lerp(1.5f, 0.9f, loadRatio);
         rb.linearDamping = 0f;
 
-        if (isFPPMode)
-            rb.constraints = RigidbodyConstraints.None;
-        else
-            rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+        rb.constraints = RigidbodyConstraints.None;
     }
 
-    // Automatyczne hamowanie w celu stabilizacji lotu
     private void ApplyDirectionalDamping()
     {
         Vector3 localVelocity = transform.InverseTransformDirection(rb.linearVelocity);
@@ -165,7 +158,7 @@ public class ShipController : MonoBehaviour
         float gasInput = 0f;
         float turnInput = 0f;
         float rollInput = 0f;
-        float verticalInput = 0f;
+        float pitchInput = 0f;
 
         if (Keyboard.current != null)
         {
@@ -175,11 +168,11 @@ public class ShipController : MonoBehaviour
             if (Keyboard.current.aKey.isPressed) turnInput = -1f;
             if (Keyboard.current.dKey.isPressed) turnInput = 1f;
 
-            if (Keyboard.current.qKey.isPressed) rollInput = 1f;
-            if (Keyboard.current.eKey.isPressed) rollInput = -1f;
+            if (Keyboard.current.qKey.isPressed) rollInput = -1f; 
+            if (Keyboard.current.eKey.isPressed) rollInput = 1f;  
 
-            if (Keyboard.current.spaceKey.isPressed) verticalInput = 1f;
-            if (Keyboard.current.leftShiftKey.isPressed) verticalInput = -1f;
+            if (Keyboard.current.spaceKey.isPressed) pitchInput = -1f; 
+            if (Keyboard.current.leftShiftKey.isPressed) pitchInput = 1f;  
         }
 
         bool hasFuel = stats.CurrentEnergy > 0f;
@@ -196,13 +189,21 @@ public class ShipController : MonoBehaviour
             rb.AddRelativeForce(Vector3.forward * currentForwardThrust);
         }
 
-        float targetVerticalThrust = verticalInput * stats.LiftThrust * currentPerformance;
-        currentVerticalThrust = Mathf.SmoothDamp(currentVerticalThrust, targetVerticalThrust, ref verticalVelocityRef, verticalAccelerationTime);
+        float pitchForce = pitchInput * stats.ManeuverForce * currentPerformance;
+        float yawForce = turnInput * stats.ManeuverForce * currentPerformance;
+        float rollTorque = -rollInput * stats.RollForce * currentPerformance;
 
-        if (Mathf.Abs(currentVerticalThrust) > 10f)
-        {
-            rb.AddRelativeForce(Vector3.up * currentVerticalThrust);
-        }
+        float currentX = transform.localEulerAngles.x;
+        if (currentX > 180f) currentX -= 360f;
+
+        float currentZ = transform.localEulerAngles.z;
+        if (currentZ > 180f) currentZ -= 360f;
+
+        float maxPitch = 40f;
+        float maxRoll = 30f;
+
+        if (rollInput == 0f) rollTorque = -currentZ * stats.RollForce * 0.02f * currentPerformance;
+        if (pitchInput == 0f && !isFPPMode) pitchForce = -currentX * stats.ManeuverForce * 0.02f * currentPerformance;
 
         if (isFPPMode)
         {
@@ -214,29 +215,45 @@ public class ShipController : MonoBehaviour
                 _accumulatedMouseDelta = Vector2.zero;
             }
 
-            float pitchForce = -mouseY * stats.ManeuverForce * currentPerformance;
-            float yawForce = mouseX * stats.ManeuverForce * currentPerformance;
-            float rollTorque = -rollInput * stats.RollForce * currentPerformance;
-
-            rb.AddRelativeTorque(new Vector3(pitchForce, yawForce, rollTorque));
+            pitchForce += -mouseY * stats.ManeuverForce * currentPerformance;
+            yawForce += mouseX * stats.ManeuverForce * currentPerformance;
         }
-        else
+
+        if (currentX > maxPitch && pitchForce > 0) pitchForce = 0f;
+        if (currentX < -maxPitch && pitchForce < 0) pitchForce = 0f;
+        
+        if (currentZ > maxRoll && rollTorque > 0) rollTorque = 0f;
+        if (currentZ < -maxRoll && rollTorque < 0) rollTorque = 0f;
+
+        rb.AddRelativeTorque(new Vector3(pitchForce, yawForce, rollTorque));
+
+        Vector3 localEulers = transform.localEulerAngles;
+        float x = localEulers.x; if (x > 180f) x -= 360f;
+        float z = localEulers.z; if (z > 180f) z -= 360f;
+
+        bool clamped = false;
+        if (x > maxPitch) { x = maxPitch; clamped = true; }
+        if (x < -maxPitch) { x = -maxPitch; clamped = true; }
+        if (z > maxRoll) { z = maxRoll; clamped = true; }
+        if (z < -maxRoll) { z = -maxRoll; clamped = true; }
+
+        if (clamped)
         {
-            if (turnInput != 0)
-            {
-                rb.AddTorque(Vector3.up * turnInput * stats.ManeuverForce * currentPerformance);
-            }
-
-            float targetRoll = -rollInput * maxRollAngle;
-            currentVisualRoll = Mathf.Lerp(currentVisualRoll, targetRoll, Time.fixedDeltaTime * rollSmoothSpeed);
-
-            if (shipVisualModel != null)
-            {
-                shipVisualModel.localRotation = Quaternion.Euler(0f, 0f, currentVisualRoll);
-            }
+            transform.localEulerAngles = new Vector3(x, localEulers.y, z);
+            Vector3 localAngularVel = transform.InverseTransformDirection(rb.angularVelocity);
+            if ((x >= maxPitch && localAngularVel.x > 0) || (x <= -maxPitch && localAngularVel.x < 0)) 
+                localAngularVel.x = 0f;
+            if ((z >= maxRoll && localAngularVel.z > 0) || (z <= -maxRoll && localAngularVel.z < 0)) 
+                localAngularVel.z = 0f;
+            rb.angularVelocity = transform.TransformDirection(localAngularVel);
         }
 
-        bool isMoving = gasInput != 0 || turnInput != 0 || verticalInput != 0 || rollInput != 0 || (isFPPMode && Mouse.current != null && Mouse.current.delta.ReadValue().sqrMagnitude > 0.1f);
+        if (shipVisualModel != null)
+        {
+            shipVisualModel.localRotation = Quaternion.identity;
+        }
+
+        bool isMoving = gasInput != 0 || turnInput != 0 || pitchInput != 0 || rollInput != 0 || (isFPPMode && Mouse.current != null && Mouse.current.delta.ReadValue().sqrMagnitude > 0.1f);
         if (isMoving && hasFuel)
         {
             stats.UseEnergy(stats.NormalDrainRate * Time.fixedDeltaTime);

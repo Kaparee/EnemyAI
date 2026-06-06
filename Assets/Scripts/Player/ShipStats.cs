@@ -28,8 +28,8 @@ public class ShipStats : MonoBehaviour {
 
     [SerializeField] private float maxMainThrust = 800000f;
     [SerializeField] private float brakeThrust = 400000f;
-    [SerializeField] private float maneuverForce = 120000f;
-    [SerializeField] private float rollForce = 120000f;
+    [SerializeField] private float maneuverForce = 24000f;
+    [SerializeField] private float rollForce = 24000f;
     [SerializeField] private float liftThrust = 120000f;
     [SerializeField] private float emergencySpeedMultiplier = 0.3f;
     [SerializeField] private float normalDrainRate = 1f;
@@ -60,16 +60,12 @@ public class ShipStats : MonoBehaviour {
         CurrentCargo = 0;
     }
 
-    //*****************************88888  
     public void UpdateMaxCargo(float multiplier) 
     {
         MaxCargo = baseCargoCapacity * multiplier;
         Debug.Log($"[ShipStats] Zwiększono pojemność ładowni do {MaxCargo} ton.");
     }
 
-    
-
-    //****************88888
     public void TakeZonedDamage(float baseDamage, Vector3 hitNormal)
     {
         float damage = baseDamage;
@@ -122,9 +118,13 @@ public class ShipStats : MonoBehaviour {
         {
             enemyAI.Die();
         }
-        else if (GameManager.Instance != null)
+        else
         {
-            GameManager.Instance.ChangeState(GameState.GameOver);
+            EventBus.TriggerOnPlayerDeath();
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.ChangeState(GameState.GameOver);
+            }
         }
     }
 
@@ -215,11 +215,9 @@ public class ShipStats : MonoBehaviour {
         Debug.Log("Zastosowano kod na maksymalne paliwo: " + amount);
     }
 
-
     public void SetHPCommand(string[] args) {
         if (args.Length > 0) {
             int amount = 0;
-            // Magiczne parsy - jak nie wklepiesz cyferki, to leci do else'a
             if (Int32.TryParse(args[0], out amount)) {
                 SetHP(amount);
             }

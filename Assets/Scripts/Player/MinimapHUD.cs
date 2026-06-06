@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 public class MinimapHUD : MonoBehaviour
 {
-    [SerializeField] private float minimapRange = 300f;
+    [SerializeField] private float minimapRange = 120f;
     [SerializeField] private float asteroidRefreshInterval = 1f;
 
     private const float MinimapSize = 200f;
@@ -13,16 +13,18 @@ public class MinimapHUD : MonoBehaviour
     private readonly List<RectTransform> enemyDots = new List<RectTransform>();
     private readonly List<RectTransform> asteroidDots = new List<RectTransform>();
 
-    private Canvas canvas;
     private RectTransform minimapRoot;
     private RectTransform playerDot;
+    private static Sprite cachedCircleSprite;
     private Sprite circleSprite;
     private Asteroid[] cachedAsteroids = new Asteroid[0];
     private float nextAsteroidRefresh;
 
     private void Awake()
     {
-        circleSprite = CreateCircleSprite(128);
+        if (cachedCircleSprite == null)
+            cachedCircleSprite = CreateCircleSprite(128);
+        circleSprite = cachedCircleSprite;
         BuildUi();
     }
 
@@ -36,8 +38,6 @@ public class MinimapHUD : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (canvas != null)
-            Destroy(canvas.gameObject);
     }
 
     private void RefreshAsteroidCache()
@@ -100,8 +100,13 @@ public class MinimapHUD : MonoBehaviour
 
     private Vector2 WorldToMinimapPosition(Vector3 worldPosition)
     {
-        Vector3 local = transform.InverseTransformPoint(worldPosition);
-        Vector2 relative = new Vector2(local.x, local.z) / Mathf.Max(1f, minimapRange);
+        Vector3 diff = worldPosition - transform.position;
+        diff.y = 0f; 
+
+        Quaternion yawRotation = Quaternion.Euler(0f, transform.eulerAngles.y, 0f);
+        Vector3 localFlat = Quaternion.Inverse(yawRotation) * diff;
+
+        Vector2 relative = new Vector2(localFlat.x, localFlat.z) / Mathf.Max(1f, minimapRange);
         relative = Vector2.ClampMagnitude(relative, 1f);
 
         float radius = (MinimapSize * 0.5f) - DotLimitPadding;
@@ -131,21 +136,11 @@ public class MinimapHUD : MonoBehaviour
 
     private void BuildUi()
     {
-        var canvasGo = new GameObject("MinimapHUD");
-        canvasGo.transform.SetParent(transform, false);
-
-        canvas = canvasGo.AddComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = 70;
-
-        var scaler = canvasGo.AddComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920f, 1080f);
-
-        canvasGo.AddComponent<GraphicRaycaster>();
+        if (SharedUIManager.Instance == null || SharedUIManager.Instance.MainCanvas == null)
+            return;
 
         var rootGo = new GameObject("MinimapRoot", typeof(RectTransform), typeof(Image), typeof(Mask));
-        rootGo.transform.SetParent(canvas.transform, false);
+        rootGo.transform.SetParent(SharedUIManager.Instance.MainCanvas.transform, false);
 
         minimapRoot = rootGo.GetComponent<RectTransform>();
         minimapRoot.anchorMin = new Vector2(1f, 0f);

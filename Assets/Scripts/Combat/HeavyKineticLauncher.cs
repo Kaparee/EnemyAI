@@ -5,12 +5,13 @@ public class HeavyKineticLauncher : MonoBehaviour
     [SerializeField] private GameObject projectilePrefab;
     [SerializeField] private Transform muzzle;
     [SerializeField] private float cooldown = 2.5f;
-    [SerializeField] private float playerProjectileDamage = 120f;
+    [SerializeField] private float playerProjectileDamage = 30f;
 
     private float lastShot = -99f;
     private Rigidbody parentRb;
 
     public Vector3 MuzzlePosition => muzzle != null ? muzzle.position : transform.position;
+    public float Cooldown => cooldown;
 
     void Start()
     {
@@ -34,6 +35,9 @@ public class HeavyKineticLauncher : MonoBehaviour
         if (Time.time - lastShot < cooldown) return;
 
         Transform ownerTransform = parentRb != null ? parentRb.transform : transform;
+        ShipStats stats = ownerTransform.GetComponent<ShipStats>();
+        if (stats != null && stats.IsDestroyed) return;
+
         Vector3 spawnPos = MuzzlePosition;
         Vector3 shootDirection = muzzle != null ? muzzle.forward : transform.forward;
 
@@ -41,7 +45,6 @@ public class HeavyKineticLauncher : MonoBehaviour
         {
             shootDirection = PlayerWeaponAim.GetDirection(spawnPos, ownerTransform);
             
-            // blokada zapobiegająca strzelaniu pod własny statek
             float angleDown = Vector3.Angle(shootDirection, -ownerTransform.up);
             if (angleDown < 45f)
                 return;
