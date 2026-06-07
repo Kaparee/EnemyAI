@@ -6,6 +6,20 @@ public class CombatHUD : MonoBehaviour
 {
     private const float BarWidth = 320f;
     private const float BarHeight = 28f;
+    
+    private static Sprite solidWhiteSprite;
+
+    private static Sprite GetSolidWhiteSprite()
+    {
+        if (solidWhiteSprite == null)
+        {
+            var texture = new Texture2D(1, 1);
+            texture.SetPixel(0, 0, Color.white);
+            texture.Apply();
+            solidWhiteSprite = Sprite.Create(texture, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f));
+        }
+        return solidWhiteSprite;
+    }
 
     private ShipStats playerStats;
     private Image playerHealthFill;
@@ -212,6 +226,7 @@ public class CombatHUD : MonoBehaviour
         root.sizeDelta = new Vector2(BarWidth, BarHeight);
 
         var background = rootGo.GetComponent<Image>();
+        background.sprite = GetSolidWhiteSprite();
         background.color = new Color(0f, 0f, 0f, 0.65f);
         background.raycastTarget = false;
 
@@ -225,6 +240,7 @@ public class CombatHUD : MonoBehaviour
         fillRect.offsetMax = new Vector2(-2f, -2f);
 
         fillImage = fillGo.GetComponent<Image>();
+        fillImage.sprite = GetSolidWhiteSprite();
         fillImage.type = Image.Type.Filled;
         fillImage.fillMethod = Image.FillMethod.Horizontal;
         fillImage.fillOrigin = (int)Image.OriginHorizontal.Left;
