@@ -1,5 +1,8 @@
 using UnityEngine;
 
+// System omijania przeszkód działający w czasie rzeczywistym.
+// Działa jako warstwa niższa pod A*, modyfikująca wektor prędkości na podstawie raycastów (lub spherecastów),
+// zapobiegając kolizjom z dynamicznymi obiektami (np. asteroidami), których A* nie uwzględnił w siatce.
 public class ObstacleAvoidance : MonoBehaviour
 {
     [Header("Avoidance Settings")]
@@ -9,6 +12,7 @@ public class ObstacleAvoidance : MonoBehaviour
 
     private float lastLogTime;
 
+    // Inicjalizuje maske warstw przeszkod bazujac na globalnych ustawieniach projektu
     private void Awake()
     {
         if (obstacleLayer.value == 0)
@@ -19,6 +23,7 @@ public class ObstacleAvoidance : MonoBehaviour
         }
     }
 
+    // Oblicza wektor wymijania uzywajac promieni sprawdzajacych i modyfikuje kierunek docelowy
     public Vector3 GetModifiedDirection(Vector3 desiredDirection)
     {
         Vector3 forward = transform.forward;

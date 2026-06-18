@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 
+// Wizualny celownik pomagający przewidzieć trajektorię lotu pocisków względem wybranego kąta obrotu statku.
 public class PlayerAimHud : MonoBehaviour
 {
     [SerializeField] private HeavyKineticLauncher launcher;
@@ -9,6 +10,7 @@ public class PlayerAimHud : MonoBehaviour
     private RectTransform trajectoryDot;
     private Canvas canvas;
 
+    // Wyszukuje komponent wyposazenia broni glownej i natychmiast zleca utworzenie wezlow celownika na plotnie interfejsu.
     void Awake()
     {
         if (launcher == null)
@@ -17,6 +19,7 @@ public class PlayerAimHud : MonoBehaviour
         BuildUi();
     }
 
+    // Rzutuje obliczony punkt przeciecia pociskow ze srodowiskiem na wspolrzedne plaskiego ekranu kamery glownej.
     void LateUpdate()
     {
         if (launcher == null || Camera.main == null || SharedUIManager.Instance == null || SharedUIManager.Instance.MainCanvas == null)
@@ -41,6 +44,7 @@ public class PlayerAimHud : MonoBehaviour
         trajectoryDot.gameObject.SetActive(true);
     }
 
+    // Proceduralnie instaluje na glownym plotnie celownik krzyzowy wraz ze wskaźnikiem trajektorii, parametryzujac ich grafike.
     private void BuildUi()
     {
         if (SharedUIManager.Instance == null || SharedUIManager.Instance.MainCanvas == null)
@@ -59,6 +63,7 @@ public class PlayerAimHud : MonoBehaviour
         trajectoryDot.anchoredPosition = Vector2.zero;
     }
 
+    // Konstruuje podstawowy niewidoczny komponent prostokata na podstawie wezla transformacji o przypisanej domyslnie nazwie.
     private static RectTransform CreateRect(string name, Transform parent)
     {
         var go = new GameObject(name, typeof(RectTransform));
@@ -66,12 +71,14 @@ public class PlayerAimHud : MonoBehaviour
         return go.GetComponent<RectTransform>();
     }
 
+    // Wykorzystuje funkcje pomocnicza do utworzenia polprzezroczystego paska tworzacego ramie glownego krzyza celowniczego.
     private static void CreateCrossBar(RectTransform parent, Vector2 size)
     {
         var bar = CreateDot(parent, size, new Color(1f, 1f, 1f, 0.9f));
         bar.anchoredPosition = Vector2.zero;
     }
 
+    // Instancjuje graficzna reprezentacje wezla punktowego na interfejsie i blokuje dla niego detekcje promieni kursora myszy.
     private static RectTransform CreateDot(RectTransform parent, Vector2 size, Color color)
     {
         var go = new GameObject("Dot", typeof(RectTransform), typeof(Image));

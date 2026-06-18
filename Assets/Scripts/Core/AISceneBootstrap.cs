@@ -1,6 +1,7 @@
 using UnityEngine;
 
 [DefaultExecutionOrder(-100)]
+// Inicjalizator uruchamiany przy starcie sceny. Wczytuje globalne mechaniki AI, by zapobiec błędom brakujących referencji.
 public class AISceneBootstrap : MonoBehaviour
 {
     [Header("Sektor")]
@@ -14,6 +15,7 @@ public class AISceneBootstrap : MonoBehaviour
     [Header("Opcje")]
     [SerializeField] private bool removeLegacySceneEnemy = true;
 
+    // Uruchamia sekwencje inicjalizacyjna systemow AI bezposrednio przed startem gry.
     private void Awake()
     {
         EnsurePlayerSetup();
@@ -23,6 +25,7 @@ public class AISceneBootstrap : MonoBehaviour
         CleanupLegacyEnemy();
     }
 
+    // Sprawdza poprawnosc konfiguracji gracza i w razie potrzeby nadaje mu brakujace znaczniki oraz odpowiednia warstwe fizyki.
     private void EnsurePlayerSetup()
     {
         GameObject player = GameObject.FindGameObjectWithTag("Player");
@@ -35,6 +38,7 @@ public class AISceneBootstrap : MonoBehaviour
             player.AddComponent<PlayerMarker>();
     }
 
+    // Gwarantuje obecnosc w scenie menedzera rejestrujacego przeszkody dla algorytmow nawigacyjnych.
     private void EnsureObstacleRegistry()
     {
         if (FindFirstObjectByType<ObstacleRegistry>() == null)
@@ -44,6 +48,7 @@ public class AISceneBootstrap : MonoBehaviour
         }
     }
 
+    // Weryfikuje istnienie menedzera punktow kontrolnych, inicjalizujac go w zadanym centrum sektora, jesli nie zostal wczesniej utworzony.
     private void EnsurePatrolWaypointManager()
     {
         if (FindFirstObjectByType<PatrolWaypointManager>() != null) return;
@@ -55,6 +60,7 @@ public class AISceneBootstrap : MonoBehaviour
         pwm.sectorCenter = sectorCenter;
     }
 
+    // Powoluje do zycia spawner odpowiedzialny za dynamiczne generowanie jednostek w obszarze gry.
     private void EnsureSectorSpawner()
     {
         CustomSectorSpawner spawner = FindFirstObjectByType<CustomSectorSpawner>();
@@ -72,6 +78,7 @@ public class AISceneBootstrap : MonoBehaviour
             spawner.availableArchetypes = ResolveArchetypes();
     }
 
+    // Oczyszcza scene z pozostalosci wrogow wczytanych statycznie, wspierajac system dynamicznego spawnowania jednostek.
     private void CleanupLegacyEnemy()
     {
         if (!removeLegacySceneEnemy) return;
@@ -84,6 +91,7 @@ public class AISceneBootstrap : MonoBehaviour
         }
     }
 
+    // Odnajduje i zwraca referencje do glownego prefabrykatu przeciwnika ladowanego z zasobow projektu.
     private GameObject ResolveEnemyPrefab()
     {
         if (enemyPrefab != null) return enemyPrefab;
@@ -91,6 +99,7 @@ public class AISceneBootstrap : MonoBehaviour
         return enemyPrefab;
     }
 
+    // Tworzy i zwraca liste dostepnych archetypow zachowan przeciwnikow, pobierajac je z dynamicznie ladowanych zasobow bazowych.
     private AIArchetype[] ResolveArchetypes()
     {
         var list = new System.Collections.Generic.List<AIArchetype>();

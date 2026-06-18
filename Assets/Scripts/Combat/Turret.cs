@@ -1,5 +1,8 @@
 using UnityEngine;
 
+// Logika automatycznego celowania wieżyczek.
+// Uwzględnia przewidywanie pozycji celu (tzw. deflection shooting), obliczając wektor przecięcia
+// pocisku z celem na podstawie jego aktualnej prędkości.
 public class Turret : WeaponBase
 {
     public Transform turretHead;
@@ -20,6 +23,7 @@ public class Turret : WeaponBase
     private Vector3? aimPointOverride;
     private Rigidbody parentRb;
 
+    // Pobiera referencje do ciala fizycznego i dostosowuje sile razenia jezeli nalezy do przeciwnika
     void Start()
     {
         parentRb = GetComponentInParent<Rigidbody>();
@@ -42,11 +46,13 @@ public class Turret : WeaponBase
             }
         }
     }
+    // Zapisuje wskazany punkt w przestrzeni jako priorytetowy cel do ostrzalu
     public void SetAimPoint(Vector3 worldPoint)
     {
         aimPointOverride = worldPoint;
     }
 
+    // Identyfikuje rodzaj pocisku i zwraca jego bazowa predkosc poczatkowa
     public float GetProjectileSpeed()
     {
         if (projectilePrefab == null) return 40f;
@@ -57,6 +63,9 @@ public class Turret : WeaponBase
         return 40f;
     }
 
+    // Główna pętla logiczna klatki. Staram się tu minimalizować ciężkie obliczenia.
+
+    // Odswieza cyklicznie obrot lufy i wyzwala strzal kiedy cel jest w zasiegu
     private void Update()
     {
         AimAtTargetManually();
@@ -75,11 +84,13 @@ public class Turret : WeaponBase
         }
     }
 
+    // Sprawdza czy istnieje poprawny cel bezposredni lub recznie przypisany punkt strzalu
     private bool HasValidTarget()
     {
         return target != null || aimPointOverride.HasValue;
     }
 
+    // Obraca wezly wiezyczki w strone wskazanego punktu uwzgledniajac fizyczne limity katowe
     private void AimAtTargetManually()
     {
         Vector3 aimPoint = aimPointOverride ?? (target != null ? target.position : transform.position + transform.forward);
@@ -96,6 +107,7 @@ public class Turret : WeaponBase
             rotationSpeed * 50f * Time.deltaTime);
     }
 
+    // Generuje nowy pocisk obracajac go w strone celu i dodaje fizyczny rozrzut
     public override void Fire()
     {
         if (projectilePrefab == null || firePoint == null) return;

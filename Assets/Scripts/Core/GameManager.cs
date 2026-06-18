@@ -12,6 +12,8 @@ public enum GameState
     GameOver
 }
 
+// Główny menedżer stanu gry (Singleton).
+// Zarządza cyklem życia aplikacji, przepływem scen i globalnymi zdarzeniami w systemie.
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance;
@@ -32,28 +34,33 @@ public class GameManager : MonoBehaviour
     [Header("Enemy Registry")]
     public List<EnemyAI> activeEnemies = new List<EnemyAI>();
 
+    // Dodaje nowo utworzonego lub aktywnego przeciwnika do globalnego rejestru sledzonych jednostek wroga.
     public void RegisterEnemy(EnemyAI enemy)
     {
         if (enemy != null && !activeEnemies.Contains(enemy))
             activeEnemies.Add(enemy);
     }
 
+    // Usuwa zniszczonego lub wylaczonego przeciwnika z listy aktywnych zagrozen w aktualnej instancji menedzera.
     public void UnregisterEnemy(EnemyAI enemy)
     {
         activeEnemies.Remove(enemy);
     }
 
+    // Odswieza struktury danych menedzera po zaladowaniu nowej sceny, pozbywajac sie referencji do nieistniejacych juz obiektow.
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         activeEnemies.RemoveAll(e => e == null);
     }
 
+    // Oczyszcza globalne delegaty i zdarzenia w momencie niszczenia instancji menedzera gry, zeby zapobiec wyciekom pamieci.
     private void OnDestroy()
     {
         if (Instance == this)
             SceneManager.sceneLoaded -= OnSceneLoaded;
     }
 
+    // Wymusza wzorzec Singletona podczas ladowania pierwszego skryptu i zachowuje go miedzy scenami, niszczac ewentualne duplikaty.
     private void Awake()
     {
         if (Instance == null)
@@ -79,6 +86,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    // Dezaktywuje domyslnie wyswietlane ekrany smierci na starcie biezacej sesji eksploracyjnej.
     private void Start()
     {
         if (deathScreenCanvas != null)
@@ -87,6 +95,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    // Wyswietla na interfejsie gracza krotkotrwale powiadomienie tekstowe dotyczace zebranych surowcow lub statusu wydobycia.
     public void ShowMiningNotification(string message, Color color)
     {
         if (notificationText != null)
@@ -100,6 +109,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    // Aktualizuje stale pole informacyjne UI danymi o aktualnie odwiedzanym sektorze wszechswiata.
     public void ShowSectorInfo(string message, Color color)
     {
         if (infoText != null)
@@ -109,12 +119,14 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    // Ukrywa tekstowe powiadomienie z interfejsu uzytkownika po wygasnieciu jego okreslonego czasu wyswietlania.
     private void HideNotification()
     {
         if (notificationText != null)
             notificationText.gameObject.SetActive(false);
     }
 
+    // Modyfikuje globalny stan aplikacji i na jego podstawie konfiguruje widocznosc kursora myszy dla gracza.
     public void ChangeState(GameState newState)
     {
         if (currentState == newState) return;
@@ -133,6 +145,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    // Przerwa biezaca petle rozgrywki, zatrzymuje czas i wlacza wyswietlanie ostatecznego panelu z informacja o porazce.
     public void TriggerGameOver()
     {
         ChangeState(GameState.GameOver);
@@ -146,6 +159,7 @@ public class GameManager : MonoBehaviour
         Cursor.lockState = CursorLockMode.None;
     }
 
+    // Przenosi gracza w bezpieczne miejsce po utracie calego zdrowia, przywracajac mu pelnie wytrzymalosci i wznawiajac uplyw czasu.
     public void RespawnAtBase()
     {
         Time.timeScale = 1f;

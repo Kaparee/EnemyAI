@@ -2,6 +2,9 @@ using UnityEngine;
 using System.Collections.Generic;
 
 [RequireComponent(typeof(Rigidbody))]
+// Główny moduł sterujący zachowaniem przeciwników w oparciu o maszynę stanów (FSM).
+// Oddzieliłem logikę decyzyjną od czystego poruszania się, żeby łatwiej było dodawać nowe stany
+// takie jak patrolowanie czy ucieczka. Korzysta z TacticalBrain do oceny sytuacji.
 public class EnemyAI : MonoBehaviour
 {
     public enum EnemyState { Idle, Patrol, Chase, Combat, Flee }
@@ -54,6 +57,7 @@ public class EnemyAI : MonoBehaviour
     private float dodgeCooldownTimer = 0f;
     private Vector3 currentDodgeVector = Vector3.zero;
 
+    // Przeszukuje strukture obiektu by przypisac kluczowe skrypty logiki i fizyki do pol wewnetrznych
     void Awake()
     {
         rb = GetComponent<Rigidbody>();
@@ -86,6 +90,7 @@ public class EnemyAI : MonoBehaviour
             stats.SetHP(stats.GetMaxHP());
     }
 
+    // Konfiguruje wlasciwosci fizyczne oraz statystyki bazujac na danych pobranych z obiektu gracza
     void Start()
     {
         rb.mass = mass;
@@ -139,16 +144,19 @@ public class EnemyAI : MonoBehaviour
         AILog.FSM($"Start. Stan: {currentState}. Punktów patrolowych: {patrolWaypoints.Count}.");
     }
 
+    // Podlacza funkcje reakcji na wykrycie gracza do globalnego systemu zdarzen
     void OnEnable()
     {
         EventBus.OnPlayerDetected += OnPlayerDetected;
     }
 
+    // Odlacza funkcje reakcji na gracza od systemu zdarzen przed usunieciem obiektu
     void OnDisable()
     {
         EventBus.OnPlayerDetected -= OnPlayerDetected;
     }
 
+    // Pobiera od globalnego menedzera liste przygotowanych punktow lub generuje tymczasowe jesli brakuje
     public void AssignPatrolWaypoints()
     {
         PatrolWaypointManager pwm = Object.FindFirstObjectByType<PatrolWaypointManager>();
@@ -169,6 +177,7 @@ public class EnemyAI : MonoBehaviour
         AILog.Patrol($"Dostałem {patrolWaypoints.Count} punktów do oblotu sektora.");
     }
 
+    // Tworzy awaryjna liste punktow patrolowych w obrebie sektora uzywajac wbudowanego generatora sfery
     private void GenerateFallbackWaypoints()
     {
         Vector3 center = ChunkManager.Instance != null
@@ -202,6 +211,7 @@ public class EnemyAI : MonoBehaviour
         }
     }
 
+    // Rejestruje namierzonego gracza jako aktualny cel i wymusza wejscie statku w tryb walki
     private void OnPlayerDetected(Transform player)
     {
         playerTarget = player;
@@ -212,6 +222,9 @@ public class EnemyAI : MonoBehaviour
         }
     }
 
+    // Przeliczanie fizyki. Tutaj aplikowane są wszystkie siły, żeby uniknąć jitteringu.
+
+    // Wykonuje cykliczne i stabilne przeliczanie fizyki ruchu oraz zadan wynikajacych z maszyny stanow
     void FixedUpdate()
     {
         UpdateState();
@@ -221,6 +234,7 @@ public class EnemyAI : MonoBehaviour
         EnforceSectorBounds();
     }
 
+    // Ogranicza aktualna predkosc lotu do bezpiecznego maksimum by zapobiec zjawisku przenikania obiektow
     private void ClampFlightSpeed()
     {
         if (maxFlightSpeed <= 0f) return;
@@ -228,6 +242,7 @@ public class EnemyAI : MonoBehaviour
             rb.linearVelocity = rb.linearVelocity.normalized * maxFlightSpeed;
     }
 
+    // Wykrywa nadlatujace pociski i wykonuje losowe uniki ratunkowe oparte na weryfikacji kierunku wektora
     private void HandleEvasion()
     {
         if (dodgeCooldownTimer > 0f)
@@ -262,6 +277,7 @@ public class EnemyAI : MonoBehaviour
         }
     }
 
+    // Oblicza optymalny kierunek ratunkowy po czym aplikuje natychmiastowa sile odrzutu korygujac tor lotu
     private void PerformDodge(Vector3 threatVelocity)
     {
         Vector3 dodgeDir = Vector3.Cross(Vector3.up, threatVelocity).normalized;
@@ -274,6 +290,7 @@ public class EnemyAI : MonoBehaviour
         dodgeCooldownTimer = 3.0f;
     }
 
+    // Weryfikuje ilosc punktow zdrowia i dynamicznie decyduje o przejsciu pomiedzy trybami walki a ucieczki
     private void UpdateState()
     {
         if (stats == null) return;
@@ -300,6 +317,7 @@ public class EnemyAI : MonoBehaviour
         LogStateChange();
     }
 
+    // Rejestruje w systemie debugowania unikalne zdarzenia przejsc pomiedzy roznymi stanami decyzyjnymi
     private void LogStateChange()
     {
         if (currentState == lastLoggedState) return;
@@ -307,6 +325,7 @@ public class EnemyAI : MonoBehaviour
         AILog.FSM($"Zmiana stanu: {currentState}");
     }
 
+    // Uruchamia odpowiedni fragment logiki decyzyjnej bazujac na wylosowanym trybie postepowania
     private void ExecuteState()
     {
         switch (currentState)
@@ -328,6 +347,7 @@ public class EnemyAI : MonoBehaviour
         }
     }
 
+    // Odpytuje system znajdowania drogi i przemieszcza statek pomiedzy zaplanowanymi punktami sektora
     private void PatrolLogic()
     {
         if (patrolWaypoints.Count == 0) return;
@@ -375,12 +395,14 @@ public class EnemyAI : MonoBehaviour
         }
     }
 
+    // Zleca bezposredni poscig w strone ostatnio zapamietanej lokalizacji uciekajacego przeciwnika
     private void ChaseLogic()
     {
         if (playerTarget == null) return;
         MoveTowards(playerTarget.position, false, patrolStopDistance);
     }
 
+    // Konsultuje sie z systemem taktycznym i realizuje skomplikowane manewry zjednoczone ze strzelaniem
     private void CombatLogic()
     {
         if (playerTarget == null)
@@ -438,6 +460,7 @@ public class EnemyAI : MonoBehaviour
         UpdateTurretLeading(leadPosition);
     }
 
+    // Wyznacza odlegly punkt w wektorze ucieczkowym i aktywuje pelen ciag silnika do oddalenia sie
     private void FleeLogic()
     {
         Vector3 fleeDirection = playerTarget != null
@@ -447,6 +470,7 @@ public class EnemyAI : MonoBehaviour
         MoveTowards(transform.position + fleeDirection * 150f, false, patrolStopDistance);
     }
 
+    // Kontroluje pozycje obiektu zeby wymusic usuniecie jednostek wylatujacych poza aktywne obszary
     private void EnforceSectorBounds()
     {
         if (ChunkManager.Instance == null) return;
@@ -455,6 +479,7 @@ public class EnemyAI : MonoBehaviour
         DespawnOutOfSector();
     }
 
+    // Bezpiecznie niszczy obiekt przekazujac informacje o smierci do pozostalych komponentow gry
     public void DespawnOutOfSector()
     {
         AILog.Theory("Sektor", "Wyleciałem poza mapę sektora — usuwam się, spawner postawi nowego.");
@@ -464,6 +489,7 @@ public class EnemyAI : MonoBehaviour
         Destroy(gameObject);
     }
 
+    // Moduluje pozycje i ciag glownego silnika uwzgledniajac detekcje przeszkod i stabilizacje rotacji
     private void MoveTowards(Vector3 targetPos, bool broadsideToTarget, float haltDistance)
     {
         Vector3 direction = (targetPos - transform.position).normalized;
@@ -505,18 +531,21 @@ public class EnemyAI : MonoBehaviour
             ForceMode.Acceleration);
     }
 
+    // Sprawdza mozliwosci przypisanej broni bacznie szukajac parametru predkosci by ulatwic celowanie
     private float GetAverageProjectileSpeed()
     {
         if (mainTurret == null) return 40f;
         return mainTurret.GetProjectileSpeed();
     }
 
+    // Przekazuje najnowsza pozycje wyprzedzajaca bezposrednio do systemu pozycjonowania glownej lufy
     private void UpdateTurretLeading(Vector3 leadPosition)
     {
         if (mainTurret != null)
             mainTurret.SetAimPoint(leadPosition);
     }
 
+    // Zmienia wbudowane statystyki i dynamike lotu tak by odpowiadaly wybranemu wariantowi statku
     public void ApplyArchetype(AIArchetype archetype)
     {
         if (archetype == null) return;
@@ -537,6 +566,7 @@ public class EnemyAI : MonoBehaviour
         maxFlightSpeed = 35f * Mathf.Max(0.5f, archetype.speed);
     }
 
+    // Wytwarza efekt wizualny rozpadu statku i informuje swiat o zakonczeniu swojego funkcjonowania
     public void Die()
     {
         EventBus.TriggerOnEnemyDeath(this);
@@ -557,6 +587,7 @@ public class EnemyAI : MonoBehaviour
         Destroy(gameObject);
     }
 
+    // Wyrejestrowuje aktywna jednostke z menedzera chroniac system przed niepotrzebnymi bledami pamieci
     void OnDestroy()
     {
         if (GameManager.Instance != null)

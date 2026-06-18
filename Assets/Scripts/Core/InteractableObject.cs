@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
+// Klasa bazowa dla wszelkich obiektów, z którymi gracz może wejść w bezpośrednią interakcję z bliskiej odległości.
 public class InteractableObject : MonoBehaviour {
     public AreaSpawnerManager manager;
     public GameObject parentArea;
@@ -17,6 +18,7 @@ public class InteractableObject : MonoBehaviour {
     [Header("Asteroid Explosion")]
     [SerializeField] private GameObject explosionPrefab;
 
+    // Wylapuje wejscie obiektu gracza w wewnetrzny kolider asteroidy, powiadamiajac zarzadce o koniecznosci zarejestrowania kontaktu.
     void OnTriggerEnter(Collider other) {
         if (other.CompareTag("Player")) {
 
@@ -28,6 +30,9 @@ public class InteractableObject : MonoBehaviour {
         }
     }
 
+    // Główna pętla logiczna klatki. Staram się tu minimalizować ciężkie obliczenia.
+
+    // Okresowo weryfikuje dystans pomiedzy pozycja obiektu a srodkiem jego przynaleznego sektora obszaru spawnowania.
     private void Update()
     {
         if (parentArea == null) return;
@@ -42,6 +47,7 @@ public class InteractableObject : MonoBehaviour {
         }
     }
 
+    // Niszczy zbedny lub oddalony za daleko od zrodla obiekt, zastepujac go opcjonalnie efektem wizualnym eksplozji.
     void CheckDistance()
     {
         if (distanceBetweenObjects > 250)

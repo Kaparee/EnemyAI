@@ -2,12 +2,14 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "ResourceDatabase", menuName = "Mining/ResourceDatabase")]
+// Globalna baza danych przechowująca definicje i konfiguracje wszystkich typów surowców dostępnych w świecie gry.
 public class ResourceDatabase : ScriptableObject
 {
 
     [Header("Lista Surowców")]
     public List<ResourceDefinition> Resources = new List<ResourceDefinition>();
 
+    // Losuje i zwraca typ surowca na podstawie ustalonych wag prawdopodobienstwa dla zadanego poziomu zaawansowania sektora.
     public ResourceDefinition GetRandomResource(int sectorStage)
     {
 
@@ -32,6 +34,7 @@ public class ResourceDatabase : ScriptableObject
         }
         return Resources[0];
     }
+    // Zapisuje wszystkie konfiguracje i parametry zasobow z bazy danych do zewnetrznego pliku formacie JSON dla celow archiwizacji lub edycji.
     [ContextMenu("Eksportuj do JSON")]
     public void ExportToJSON() {
         string json = JsonUtility.ToJson(this, true);

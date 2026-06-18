@@ -3,6 +3,8 @@ using Debug = UnityEngine.Debug;
 using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(Rigidbody), typeof(ShipStats))]
+// Kontroler statku gracza, bazujący na fizyce (Rigidbody).
+// Użyłem precyzyjnego sterowania siłami (AddForce, AddTorque), aby uzyskać realistyczne poczucie inercji w przestrzeni kosmicznej.
 public class ShipController : MonoBehaviour
 {
     [Header("KAMERY")]
@@ -35,6 +37,7 @@ public class ShipController : MonoBehaviour
     private float previousLoadPercent = -1f;
     private bool lowFuelWarningTriggered = false;
 
+    // Uzupelnia brakujace komponenty interfejsu gracza i broni oraz aplikuje stan sil fizycznych od momentu zespawnowania jednostki.
     void Start()
     {
         launcher = GetComponent<HeavyKineticLauncher>();
@@ -64,6 +67,9 @@ public class ShipController : MonoBehaviour
         UpdatePhysics();
     }
 
+    // Główna pętla logiczna klatki. Staram się tu minimalizować ciężkie obliczenia.
+
+    // Akumuluje delte przesuniecia myszy i reaguje na skroty klawiszowe zwiazane z przelaczaniem asysty, widoku i strzalem broni.
     void Update()
     {
         if (Keyboard.current != null && Keyboard.current.vKey.wasPressedThisFrame)
@@ -93,6 +99,9 @@ public class ShipController : MonoBehaviour
             launcher.TryFire();
     }
 
+    // Przeliczanie fizyki. Tutaj aplikowane są wszystkie siły, żeby uniknąć jitteringu.
+
+    // Prowadzi obliczenia sil i wektorow momentow obrotowych w stabilnych ramach czasowych wylaczajac kalkulacje w zablokowanym stanie gry.
     void FixedUpdate()
     {
         if (GameManager.Instance != null &&
@@ -112,6 +121,7 @@ public class ShipController : MonoBehaviour
         }
     }
 
+    // Aktywuje wyznaczony obiektyw kamery i ewentualnie redukuje rotacje pozioma podczas zamiany na perspektywe trzecioosobowa.
     private void ApplyCameraMode()
     {
         if (tppCameraObject != null) tppCameraObject.SetActive(!isFPPMode);
@@ -125,6 +135,7 @@ public class ShipController : MonoBehaviour
         }
     }
 
+    // Konfiguruje opory liniowe i tarcie na podstawie calkowitej wagi statku zawierajacej takze zaksiegowana mase ladunku.
     private void UpdatePhysics()
     {
         rb.mass = stats.GetTotalMass();
@@ -137,6 +148,7 @@ public class ShipController : MonoBehaviour
         rb.constraints = RigidbodyConstraints.None;
     }
 
+    // Hamuje poszczegolne wektory liniowe we wlasnym ukladzie odniesienia wprowadzajac sztuczne ciagi korygujace predkosc sferyczna statku.
     private void ApplyDirectionalDamping()
     {
         Vector3 localVelocity = transform.InverseTransformDirection(rb.linearVelocity);
@@ -153,6 +165,7 @@ public class ShipController : MonoBehaviour
         rb.AddRelativeForce(new Vector3(-dragX, -dragY, -dragZ), ForceMode.Acceleration);
     }
 
+    // Translokuje wejscie gracza na docelowe obroty i osie ciagu we wlasnym ukladzie i wstrzykuje wyliczone sily pociagowe do symulatora.
     void HandleMovement()
     {
         float gasInput = 0f;
@@ -260,6 +273,7 @@ public class ShipController : MonoBehaviour
         }
     }
 
+    // Generuje i odwoluje krytyczny sygnal ostrzegawczy przy wyczerpywaniu sie zapasu energii potrzebnego do funkcjonowania napedow.
     private void CheckFuelWarning()
     {
         if (stats.CurrentEnergy <= stats.LowFuelThreshold && !lowFuelWarningTriggered && stats.CurrentEnergy > 0)

@@ -1,7 +1,9 @@
 using UnityEngine;
 
+// Fabryka obiektów (wzorzec Factory), ułatwiająca dynamiczne instancjonowanie i konfigurowanie wrogów w trakcie gry.
 public static class EnemyRuntimeFactory
 {
+    // Generuje obiekt przeciwnika i konfiguruje wszystkie jego komponenty bazowe
     public static GameObject Create(Vector3 position, Quaternion rotation, GameObject projectilePrefab, Mesh hullMesh = null)
     {
         GameObject root = new GameObject("EnemyWroga");
@@ -52,6 +54,7 @@ public static class EnemyRuntimeFactory
         return root;
     }
 
+    // Tworzy podzespoly wiezyczki i podpina skrypty sterujace strzelaniem
     private static Turret CreateTurret(Transform parent, string name, Vector3 localPos, GameObject projectilePrefab, float minYaw, float maxYaw)
     {
         GameObject turretGo = new GameObject(name);

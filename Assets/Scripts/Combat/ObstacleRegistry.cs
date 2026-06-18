@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 
+// Rejestr trzymający w pamięci aktualne pozycje znaczących przeszkód, kluczowy dla omijania kolizji przez AI w czasie rzeczywistym.
 public class ObstacleRegistry : MonoBehaviour
 {
     private static ObstacleRegistry _instance;
@@ -30,6 +31,7 @@ public class ObstacleRegistry : MonoBehaviour
     private float updateTimer = 0f;
     private float updateInterval = 1.5f;
 
+    // Konfiguruje instancje singletona rejestru przeszkod
     void Awake()
     {
         if (_instance != null && _instance != this)
@@ -40,11 +42,15 @@ public class ObstacleRegistry : MonoBehaviour
         _instance = this;
     }
 
+    // Wykonuje wstepne zaladowanie listy przeszkod podczas startu sceny
     void Start()
     {
         RefreshObstacles();
     }
 
+    // Główna pętla logiczna klatki. Staram się tu minimalizować ciężkie obliczenia.
+
+    // Odswieza liste zarejestrowanych przeszkod w okreslonych odstepach czasu
     void Update()
     {
         updateTimer += Time.deltaTime;
@@ -55,6 +61,7 @@ public class ObstacleRegistry : MonoBehaviour
         }
     }
 
+    // Pobiera wszystkie przeszkody ze sceny korzystajac ze zderzakow i wlasciwosci obiektow
     private void RefreshObstacles()
     {
         Obstacles.Clear();
@@ -76,6 +83,7 @@ public class ObstacleRegistry : MonoBehaviour
         }
     }
 
+    // Szybko weryfikuje czy dany punkt swiata z uwzglednieniem promienia lezy wewnatrz przeszkody
     public bool IsPositionBlocked(Vector3 pos, float checkRadius)
     {
         for (int i = 0; i < Obstacles.Count; i++)

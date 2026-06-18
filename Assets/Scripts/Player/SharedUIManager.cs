@@ -1,12 +1,14 @@
 using UnityEngine;
 using UnityEngine.UI;
 
+// Menedżer zapobiegający nakładaniu się wielu paneli UI (np. jednocześnie odpalonego ekwipunku i statystyk).
 public class SharedUIManager : MonoBehaviour
 {
     public static SharedUIManager Instance { get; private set; }
 
     public Canvas MainCanvas { get; private set; }
 
+    // Egzekwuje wzorzec projektowy Singleton zwalniajac zdublowane instancje i wywolujac instalacje bazowego plotna ekranu.
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -19,6 +21,7 @@ public class SharedUIManager : MonoBehaviour
         BuildMainCanvas();
     }
 
+    // Powoluje do zycia glowne plotno gry i naklada na nie automatyczne skalowanie zaleznie od fizycznej rozdzielczosci okna renderera.
     private void BuildMainCanvas()
     {
         var canvasGo = new GameObject("SharedMainCanvas");

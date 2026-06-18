@@ -1,5 +1,7 @@
 using UnityEngine;
 
+// Definicje warstw (layers) używanych przez AI do raycastów.
+// Optymalizuje fizykę, ograniczając sprawdzanie kolizji tylko do odpowiednich masek (np. omijanie własnych jednostek).
 public static class AILayers
 {
     public const string PlayerLayerName = "Player";
@@ -26,6 +28,7 @@ public static class AILayers
         }
     }
 
+    // Rekursywnie ustawia warstwe dla wybranego obiektu oraz wszystkich jego dzieci w hierarchii transformacji.
     public static void SetLayerRecursively(GameObject go, int layer)
     {
         if (go == null || layer < 0) return;

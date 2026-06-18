@@ -3,6 +3,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+// Zapewnia wizualny feedback trafień w postaci wyskakujących z wrogów wartości zadanych obrażeń (Floating Text).
 public class DamagePopup : MonoBehaviour
 {
     [SerializeField] private float lifetime = 1.5f;
@@ -11,6 +12,7 @@ public class DamagePopup : MonoBehaviour
     private static DamagePopup instance;
     private Canvas canvas;
 
+    // Inicjalizuje menedzera tekstu obrazen przy starcie aplikacji
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void Bootstrap()
     {
@@ -22,6 +24,7 @@ public class DamagePopup : MonoBehaviour
         instance = go.AddComponent<DamagePopup>();
     }
 
+    // Konfiguruje instancje singletona i buduje plotno interfejsu
     private void Awake()
     {
         if (instance != null && instance != this)
@@ -34,16 +37,19 @@ public class DamagePopup : MonoBehaviour
         BuildCanvas();
     }
 
+    // Rejestruje nasluchiwanie zadanych obrazen
     private void OnEnable()
     {
         ShipStats.OnDamageDealt += ShowDamage;
     }
 
+    // Wyrejestrowuje nasluchiwanie zadanych obrazen
     private void OnDisable()
     {
         ShipStats.OnDamageDealt -= ShowDamage;
     }
 
+    // Tworzy i wyswietla na ekranie tekst z wartoscia zadanych obrazen
     private void ShowDamage(Vector3 worldPosition, float damage, bool damageToPlayer)
     {
         if (canvas == null)
@@ -59,6 +65,7 @@ public class DamagePopup : MonoBehaviour
         StartCoroutine(AnimatePopup(screenPosition, damage, damageToPlayer));
     }
 
+    // Animuje ruch w gore oraz zanikanie tekstu obrazen
     private IEnumerator AnimatePopup(Vector3 startPosition, float damage, bool damageToPlayer)
     {
         var textGo = new GameObject("DamagePopupText", typeof(RectTransform), typeof(TextMeshProUGUI));
@@ -93,6 +100,7 @@ public class DamagePopup : MonoBehaviour
         Destroy(textGo);
     }
 
+    // Tworzy glowne plotno interfejsu i konfiguruje jego parametry
     private void BuildCanvas()
     {
         var canvasGo = new GameObject("DamagePopupCanvas");

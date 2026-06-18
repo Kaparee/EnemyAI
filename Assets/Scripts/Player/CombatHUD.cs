@@ -2,6 +2,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+// Interfejs bojowy widoczny na ekranie, prezentujący graczowi kluczowe dane: pancerz, stan osłon oraz pozostałą amunicję.
 public class CombatHUD : MonoBehaviour
 {
     private const float BarWidth = 320f;
@@ -9,6 +10,7 @@ public class CombatHUD : MonoBehaviour
     
     private static Sprite solidWhiteSprite;
 
+    // Zwraca jednolita biala teksture 1x1, tworzac ja w pamieci, jesli wczesniej nie zostala zainicjalizowana.
     private static Sprite GetSolidWhiteSprite()
     {
         if (solidWhiteSprite == null)
@@ -41,12 +43,14 @@ public class CombatHUD : MonoBehaviour
     private float currentEnemyHpDisplayed;
     private float enemyHpVelocity;
 
+    // Inicjalizuje glowne referencje komponentu statystyk i wywoluje metode budujaca caly interfejs bojowy.
     private void Awake()
     {
         playerStats = GetComponent<ShipStats>();
         BuildUi();
     }
 
+    // Wykonuje odswiezenie elementow interfejsu takich jak zdrowie i przeladowanie broni na koniec kazdej klatki.
     private void LateUpdate()
     {
         UpdatePlayerHealth();
@@ -54,10 +58,12 @@ public class CombatHUD : MonoBehaviour
         UpdateWeaponReload();
     }
 
+    // Pusta metoda wywolywana w momencie usuwania obiektu z pamieci operacyjnej sceny.
     private void OnDestroy()
     {
     }
 
+    // Pobiera aktualny stan wytrzymalosci gracza i przekazuje go do metody rysujacej parametry paska.
     private void UpdatePlayerHealth()
     {
         if (playerStats == null)
@@ -66,6 +72,7 @@ public class CombatHUD : MonoBehaviour
         SetHealthBar(playerStats, playerHealthFill, playerHPText, ref currentPlayerHpDisplayed, ref playerHpVelocity);
     }
 
+    // Wyszukuje najblizszego wroga w zdefiniowanych odstepach czasowych i zarzadza widocznoscia oraz stanem jego paska zdrowia.
     private void UpdateEnemyHealth()
     {
         if (Time.time >= nextEnemySearchTime)
@@ -83,6 +90,7 @@ public class CombatHUD : MonoBehaviour
             SetHealthBar(cachedEnemyStats, enemyHealthFill, enemyHPText, ref currentEnemyHpDisplayed, ref enemyHpVelocity);
     }
 
+    // Odpytuje system uzbrojenia o biezacy postep przeladowania i aktualizuje wartosci oraz kolory na przypisanym pasku.
     private void UpdateWeaponReload()
     {
         if (playerLauncher == null)
@@ -106,6 +114,7 @@ public class CombatHUD : MonoBehaviour
         }
     }
 
+    // Przeszukuje globalna liste aktywnych wrogow i zwraca statystyki tego, ktory znajduje sie w najmniejszej odleglosci do gracza.
     private ShipStats FindNearestEnemyStats()
     {
         if (GameManager.Instance == null || GameManager.Instance.activeEnemies == null)
@@ -134,6 +143,7 @@ public class CombatHUD : MonoBehaviour
         return bestStats;
     }
 
+    // Aplikuje plynna interpolacje na wyswietlanych wartosciach zdrowia oraz ustawia adekwatny kolor i szerokosc wypelnienia interfejsu.
     private void SetHealthBar(ShipStats stats, Image fill, TextMeshProUGUI text, ref float currentDisplayedHp, ref float hpVelocity)
     {
         if (fill == null || text == null)
@@ -157,6 +167,7 @@ public class CombatHUD : MonoBehaviour
         text.text = $"{Mathf.CeilToInt(currentDisplayedHp)} / {Mathf.CeilToInt(maxHp)}";
     }
 
+    // Interpoluje wielofazowo barwy pomiedzy zielenia, zolcia i czerwienia bazujac na aktualnym udziale procentowym punktow zycia.
     private static Color GetHealthColor(float hpPercent)
     {
         if (hpPercent > 0.5f)
@@ -165,6 +176,7 @@ public class CombatHUD : MonoBehaviour
         return Color.Lerp(Color.red, Color.yellow, hpPercent * 2f);
     }
 
+    // Generuje zestaw wszystkich elementow interfejsu bojowego w odpowiednim miejscu na ekranie bazujac na wezlach glownego plotna.
     private void BuildUi()
     {
         if (SharedUIManager.Instance == null || SharedUIManager.Instance.MainCanvas == null)
@@ -204,6 +216,7 @@ public class CombatHUD : MonoBehaviour
             out _);
     }
 
+    // Instancjuje strukture wezlow UI odpowiedzialna za wyswietlanie pojedynczego, opisanego paska zdrowia wraz z tlem oraz maskowaniem.
     private static void CreateHealthBar(
         string name,
         Transform parent,
@@ -262,6 +275,7 @@ public class CombatHUD : MonoBehaviour
         labelText.rectTransform.sizeDelta = new Vector2(0f, 20f);
     }
 
+    // Tworzy wystapienie komponentu tekstowego i wiaze je z wezlem interfejsu uzytkownika o sprecyzowanych parametrach pozycjonowania.
     private static TextMeshProUGUI CreateText(
         string name,
         Transform parent,

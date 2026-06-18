@@ -4,6 +4,8 @@ using TMPro;
 using UnityEngine;
 
 [System.Serializable]
+// System zarządzania fragmentami świata (chunks).
+// Optymalizuje pamięć i rendering poprzez ładowanie/rozładowywanie sektorów w miarę przemieszczania się gracza.
 public class AsteroidSavedData {
     public Vector3 localPos;
 }
@@ -30,6 +32,7 @@ public class ChunkManager : MonoBehaviour
 
     public static ChunkManager Instance;
 
+    // Przypisuje instancje singletona, umozliwiajac globalny dostep do zarzadcy sektorow.
     void Awake() {
         Instance = this;
     }
@@ -42,6 +45,7 @@ public class ChunkManager : MonoBehaviour
     public Transform Player => player;
     public Vector2Int CurrentPlayerSector => currentPlayerSector;
 
+    // Oblicza i zwraca srodek podanego lub aktualnego sektora w globalnej przestrzeni swiata.
     public Vector3 GetSectorWorldCenter(Vector2Int? grid = null)
     {
         Vector2Int g = grid ?? currentPlayerSector;
@@ -49,8 +53,10 @@ public class ChunkManager : MonoBehaviour
         return new Vector3(g.x * sectorSize + sectorSize * 0.5f, 0f, g.y * sectorSize + sectorSize * 0.5f);
     }
 
+    // Zwraca polowe wielkosci boku sektora, co jest przydatne do obliczen promienia dzialania algorytmow i granic.
     public float GetSectorHalfExtent() => sectorSize * 0.5f;
 
+    // Sprawdza, czy podana globalna pozycja znajduje sie wewnatrz zdefiniowanego sektora z uwzglednieniem dodatkowego marginesu.
     public bool IsInsideSector(Vector3 worldPos, Vector2Int? grid = null, float margin = 0f)
     {
         Vector3 center = GetSectorWorldCenter(grid);
@@ -59,6 +65,7 @@ public class ChunkManager : MonoBehaviour
             && Mathf.Abs(worldPos.z - center.z) <= half;
     }
 
+    // Ogranicza wskazana pozycje na scenie do granic wyznaczonego sektora, nie pozwalajac obiektom na wyjscie poza jego zasieg.
     public Vector3 ClampToSector(Vector3 worldPos, Vector2Int? grid = null, float margin = 5f)
     {
         Vector3 center = GetSectorWorldCenter(grid);
@@ -68,6 +75,7 @@ public class ChunkManager : MonoBehaviour
         return worldPos;
     }
 
+    // Wyszukuje gracza i po raz pierwszy oblicza jego przynaleznosc do sektora gridu, ladujac odpowiedni widok.
     private void InitPlayerSector()
     {
         if (player == null)
@@ -92,6 +100,7 @@ public class ChunkManager : MonoBehaviour
     public static int globalGroupCount = 0;
     public int maxGlobalGroups = 20;
 
+    // Przygotowuje dane startowe dla calej siatki mapy, przydzielajac odpowiednie poziomy trudnosci i generujac glowne struktury.
     private void GenerateWorldData() {
 
         List<Vector2Int> allCoords = new List<Vector2Int>();
@@ -135,6 +144,7 @@ public class ChunkManager : MonoBehaviour
         }
     }
 
+    // Losuje trojwymiarowe koordynaty wewnatrz przestrzeni ograniczonej rozmiarami aktualnie wczytanego sektora.
     public Vector3 GenerateRandomCords()
     {
         float limit = (sectorSize / 2f);
@@ -145,6 +155,7 @@ public class ChunkManager : MonoBehaviour
         );
     }
 
+    // Odswieza renderowanie sektora, niszczac stary i instancjonujac nowy obiekt wizualizujacy, bazujac na obliczonych koordynatach.
     private void RefreshSectorView(Vector2Int sectorCooRD) {
         if (currentSectorObject != null) {
             Destroy(currentSectorObject);
@@ -173,6 +184,7 @@ public class ChunkManager : MonoBehaviour
         }
     }
 
+    // Wypelnia dane sektora parametrami o losowych pasach asteroid, przypisujac im pozycje i rozmiary do pozniejszego instancjonowania.
     private void PopulateSectorWithBelts(SectorData targetSector) {
         float halfSector = sectorSize / 2f;
         float safeLimit = halfSector - 100f;
@@ -198,12 +210,16 @@ public class ChunkManager : MonoBehaviour
         }
     }
 
+    // Uruchamia sekwencje generowania swiata oraz konfiguracji sektora poczatkowego gracza tu po uruchomieniu obiektu.
     void Start()
     {
         GenerateWorldData();
         InitPlayerSector();
     }
 
+    // Główna pętla logiczna klatki. Staram się tu minimalizować ciężkie obliczenia.
+
+    // Wykonuje sie co klatke, aktualizujac ograniczenia pozycji gracza i weryfikujac jego przejscia pomiedzy sektorami.
     void Update()
     {
         if (player == null) {
@@ -232,6 +248,7 @@ public class ChunkManager : MonoBehaviour
         }
     }
 
+    // Probuje wygenerowac nowy pas asteroid globalnie w losowym sektorze (poza obecnym), o ile istnieja odpowiednie miejsca.
     public void TrySpawnNewBeltGlobal() {
         if (allSectorData.Count == 0) return;
 

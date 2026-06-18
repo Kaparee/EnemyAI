@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 
+// Główny menedżer na wysokim poziomie od generowania przeciwników i surowców w poszczególnych rejonach kosmosu.
 public class AreaSpawnerManager : MonoBehaviour
 {
     [Header("Resources")]
@@ -17,11 +18,13 @@ public class AreaSpawnerManager : MonoBehaviour
 
     public int currentSectorStage;
 
+    // Wykonywana przy starcie, przypisuje referencje do obiektu gracza poprzez wyszukiwanie tagu na scenie.
     void Start()
     {
         player = GameObject.FindGameObjectWithTag("Player");
     }
 
+    // Przeprowadza wstepne generowanie struktur w sektorze, tworzac pasy asteroid i obiekty wydobywcze na podstawie zapisanych danych.
     public void InitialSpawn(SectorData data) {
         if (!data.hasAsteroidGroup) return;
 
@@ -54,6 +57,7 @@ public class AreaSpawnerManager : MonoBehaviour
         }
     }
 
+    // Obsluguje zdarzenie interakcji z obiektem, przeliczajac postep wydobycia pasa i ewentualnie triggerujac respawn zasobow.
     public void OnObjectInteracted(GameObject currentArea, BeltSavedData beltData)
     {
         int emptyCount = 0;
@@ -75,6 +79,7 @@ public class AreaSpawnerManager : MonoBehaviour
         }
     }
 
+    // Konfiguruje materialy, warstwy i kolidery dla wygenerowanego obszaru w taki sposob, by dzialal jako niewidzialny wyzwalacz (trigger).
     public void SetupMaterial(GameObject area) {
         area.layer = 2;
 

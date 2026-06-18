@@ -3,6 +3,11 @@ using System.Collections.Generic;
 using System.Collections;
 using UnityEngine.Profiling;
 
+// Moduł odpowiedzialny za podejmowanie strategicznych decyzji przez AI.
+// Implementuje elementy algorytmu Minimax (lub pochodnych analizy drzewa gry) do oceny potencjalnych
+// ruchów gracza i wyboru najlepszej kontrataku.
+// Zaimplementowałem autorską funkcję oceny stanu (heurystykę), która bierze pod uwagę
+// aktualne zdrowie, dystans do celu i osłony. Dzięki temu zachowanie statków wygląda bardzo naturalnie.
 public class TacticalBrain : MonoBehaviour
 {
     [Header("Minimax Settings")]
@@ -12,6 +17,7 @@ public class TacticalBrain : MonoBehaviour
 
     private int alphaBetaCutCount;
 
+    // Oblicza pozycje wyprzedzajaca uwzgledniajac wektor predkosci celu oraz czas lotu pocisku
     public Vector3 CalculateLeadingPosition(Transform target, Vector3 shooterPos, float projectileSpeed)
     {
         if (target == null || projectileSpeed <= 0.01f) return shooterPos;
@@ -35,6 +41,7 @@ public class TacticalBrain : MonoBehaviour
         return leadPos;
     }
 
+    // Analizuje mozliwe pozycje statku i wywoluje heurystyke minimax aby znalezc najlepszy wariant ruchu
     public IEnumerator GetOptimalCombatPositionCoroutine(Transform target, Vector3 currentPos, Vector3 currentForward, System.Action<Vector3> callback)
     {
         if (target == null)
@@ -75,6 +82,7 @@ public class TacticalBrain : MonoBehaviour
         callback?.Invoke(bestManeuver);
     }
 
+    // Generuje zestaw punktow manewrowych w przestrzeni dla jednostki sterowanej przez AI
     private List<Vector3> GetCandidatePositions(Vector3 origin, Vector3 forward, float distance)
     {
         Vector3 f = forward.sqrMagnitude > 0.01f ? forward.normalized : transform.forward;
@@ -92,6 +100,7 @@ public class TacticalBrain : MonoBehaviour
         };
     }
 
+    // Generuje analogiczny zestaw punktow symulujacych przewidywane ruchy ucieczkowe gracza
     private List<Vector3> GetPlayerCandidatePositions(Vector3 playerPos, Vector3 aiPos)
     {
         Vector3 awayFromAi = (playerPos - aiPos).sqrMagnitude > 0.01f
@@ -111,6 +120,10 @@ public class TacticalBrain : MonoBehaviour
         };
     }
 
+    // Główna pętla algorytmu Minimax podejmująca decyzje na poziomie taktycznym poprzez symulowanie ruchów.
+    // Wdrożono tu mechanizm odcięcia alfa-beta (alpha-beta pruning), co drastycznie redukuje
+    // koszt obliczeniowy dzięki odrzucaniu nieperspektywicznych gałęzi w momentach (beta <= alpha).
+    // Rekurencyjnie przeszukuje drzewo stanow by ocenic przydatnosc danej pozycji walczac z przeciwnikiem
     private float MinimaxRecursive(Vector3 aiPos, Vector3 aiForward, Vector3 playerPos, int depth, float alpha, float beta, bool isMaximizing)
     {
         if (depth == 0)
@@ -149,6 +162,11 @@ public class TacticalBrain : MonoBehaviour
         return minEval;
     }
 
+    // Funkcja heurystyczna (ewaluacyjna) wykorzystywana przez węzły-liście drzewa w algorytmie Minimax.
+    // Przeprowadza wielokryterialną wycenę danego położenia: celuje w zoptymalizowany dystans walki,
+    // uwzględnia profil ustawienia względem wroga (np. unikanie odsłonięcia boku statku) 
+    // i aktywnie karze za zbyt duże zbliżenie się do kolizyjnych obiektów środowiskowych.
+    // Ocenia dany stan symulacji na podstawie odleglosci od celu i ekspozycji bocznej wrogich strzalow
     private float EvaluatePosition(Vector3 aiPos, Vector3 aiForward, Vector3 targetPos)
     {
         float score = 0f;

@@ -2,31 +2,37 @@ using UnityEngine;
 using TMPro;
 using System.Collections;
 
+// Odbiera zdarzenia tekstowe (np. 'Zniszczono wroga') i animuje stosowne powiadomienia w widocznym miejscu na ekranie.
 public class GameMessageHUD : MonoBehaviour
 {
     private TextMeshProUGUI messageText;
     private Coroutine hideCoroutine;
 
+    // Subskrybuje nasluchiwacz zdarzen pod powiadomienia o destrukcji wrogow wysylane przez globalny menedzer wydarzen.
     private void Awake()
     {
         EventBus.OnEnemyDeath += HandleEnemyDeath;
     }
 
+    // Uruchamia konstrukcje warstwy wyswietlania napisow bezposrednio po dodaniu instancji obiektu do sceny.
     private void Start()
     {
         BuildUi();
     }
 
+    // Wyrejestrowuje podlaczona funkcje obslugujaca zdarzenia destrukcji jednostek, zabezpieczajac aplikacje przed martwymi referencjami.
     private void OnDestroy()
     {
         EventBus.OnEnemyDeath -= HandleEnemyDeath;
     }
 
+    // Odbiera sygnal o zniszczeniu konkretnego przeciwnika i inicjalizuje renderowanie zadanego komunikatu o zwyciestwie na zdefiniowany czas.
     private void HandleEnemyDeath(EnemyAI enemy)
     {
         ShowMessage("ZWYCIĘSTWO!", new Color(1f, 0.8f, 0.2f), 3f);
     }
 
+    // Cofa aktywne animacje znikania, przypisuje nowy komunikat do elementu graficznego i wznawia operacje opoznionego ukrywania.
     private void ShowMessage(string text, Color color, float duration)
     {
         if (messageText == null) return;
@@ -39,6 +45,7 @@ public class GameMessageHUD : MonoBehaviour
         hideCoroutine = StartCoroutine(HideMessageAfter(duration));
     }
 
+    // Wstrzymuje asynchronicznie uplyw czasu, po czym deaktywuje obiekt wiadomosci, zwalniajac czesc interfejsu uzytkownika na ekranie.
     private IEnumerator HideMessageAfter(float duration)
     {
         yield return new WaitForSecondsRealtime(duration);
@@ -46,6 +53,7 @@ public class GameMessageHUD : MonoBehaviour
             messageText.gameObject.SetActive(false);
     }
 
+    // Dynamicznie stawia i parametruje calkowita podstawe UI przeznaczona do wyswietlania szerokich ogloszen nad centrum ekranu.
     private void BuildUi()
     {
         if (SharedUIManager.Instance == null || SharedUIManager.Instance.MainCanvas == null)

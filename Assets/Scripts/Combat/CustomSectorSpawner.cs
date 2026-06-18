@@ -1,6 +1,8 @@
 using System.Collections;
 using UnityEngine;
 
+// Odpowiada za dynamiczne generowanie wrogów i obiektów w sektorach.
+// Wykorzystałem tutaj pooling obiektów lub kontrolowaną instancjację, by zachować płynność w trakcie lotu.
 public class CustomSectorSpawner : MonoBehaviour
 {
     public AIArchetype[] availableArchetypes;
@@ -13,22 +15,26 @@ public class CustomSectorSpawner : MonoBehaviour
 
     private float nextSpawnTime;
 
+    // Rejestruje nasluchiwanie na zdarzenie smierci przeciwnika przy wlaczeniu komponentu
     private void OnEnable()
     {
         EventBus.OnEnemyDeath += OnEnemyDeath;
     }
 
+    // Wyrejestrowuje nasluchiwanie na zdarzenie smierci przeciwnika przy wylaczeniu komponentu
     private void OnDisable()
     {
         EventBus.OnEnemyDeath -= OnEnemyDeath;
     }
 
+    // Uruchamia korutyne przygotowujaca sektor po starcie gry
     private void Start()
     {
         nextSpawnTime = 0f;
         StartCoroutine(SpawnWhenSectorReady());
     }
 
+    // Odczekuje jedna klatke i odswieza menedzera punktow kontrolnych przed proba spawnu
     private IEnumerator SpawnWhenSectorReady()
     {
         yield return null;
@@ -39,17 +45,22 @@ public class CustomSectorSpawner : MonoBehaviour
         TrySpawnEnemy();
     }
 
+    // Główna pętla logiczna klatki. Staram się tu minimalizować ciężkie obliczenia.
+
+    // Sprawdza czas i uruchamia probe stworzenia nowego przeciwnika w dozwolonym momencie
     private void Update()
     {
         if (Time.time < nextSpawnTime) return;
         TrySpawnEnemy();
     }
 
+    // Aktualizuje czas nastepnego mozliwego spawnu po zniszczeniu jednostki wroga
     private void OnEnemyDeath(EnemyAI _)
     {
         nextSpawnTime = Time.time + respawnDelay;
     }
 
+    // Weryfikuje limit aktywnych jednostek przed wywolaniem procedury tworzenia wroga
     private void TrySpawnEnemy()
     {
         if (CountActiveEnemies() >= maxActiveEnemies) return;
@@ -58,6 +69,7 @@ public class CustomSectorSpawner : MonoBehaviour
         nextSpawnTime = float.MaxValue;
     }
 
+    // Zwraca aktualna liczbe przeciwnikow w scenie korzystajac z menedzera gry
     private int CountActiveEnemies()
     {
         if (GameManager.Instance != null)
@@ -66,6 +78,7 @@ public class CustomSectorSpawner : MonoBehaviour
         return FindObjectsByType<EnemyAI>(FindObjectsSortMode.None).Length;
     }
 
+    // Wylicza parametry wezla i tworzy nowy obiekt przeciwnika wewnatrz aktualnego sektora
     private void ManualSpawnInsideSector()
     {
         GameObject prefab = ResolveEnemyPrefab();
@@ -92,6 +105,7 @@ public class CustomSectorSpawner : MonoBehaviour
         SpawnEnemyAt(prefab, spawnPosition, lookTarget, chosen != null ? new[] { chosen } : availableArchetypes);
     }
 
+    // Szuka optymalnej i bezpiecznej pozycji do odrodzenia z dala od aktualnej pozycji gracza
     private Vector3 FindSpawnPosition(Vector3 center, float half, Vector3 playerPos)
     {
         Vector3 away = center - playerPos;
@@ -124,12 +138,14 @@ public class CustomSectorSpawner : MonoBehaviour
         return fallback;
     }
 
+    // Pobiera prefabrykat wroga z przypisanej zmiennej lub laduje domyslny z folderu Resources
     private GameObject ResolveEnemyPrefab()
     {
         if (enemyPrefab != null) return enemyPrefab;
         return Resources.Load<GameObject>("AI/EnemyWroga");
     }
 
+    // Instancjonuje obiekt przeciwnika i inicjalizuje jego parametry poczatkowe
     public static GameObject SpawnEnemyAt(GameObject prefab, Vector3 spawnPosition, Vector3 lookTarget, AIArchetype[] archetypes)
     {
         if (prefab == null) return null;

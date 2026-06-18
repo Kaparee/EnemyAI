@@ -1,5 +1,7 @@
 using UnityEngine;
 
+// System radaru skanującego otoczenie. Zbiera informacje o jednostkach w zasięgu.
+// Zoptymalizowałem to przez rzadsze odpytywanie fizyki (Physics.OverlapSphere), żeby odciążyć CPU.
 public class CustomRadarSystem : MonoBehaviour
 {
     public float detectionRadius = 500f;
@@ -10,16 +12,21 @@ public class CustomRadarSystem : MonoBehaviour
     private float scanInterval = 0.4f;
     private float nextScanTime;
 
+    // Pobiera referencje do komponentu TacticalBrain podczas inicjalizacji skryptu
     void Awake()
     {
         tacticalBrain = GetComponent<TacticalBrain>();
     }
 
+    // Zapisuje przekazana tablice wiezyczek do wewnetrznej zmiennej sterujacej
     public void BindTurrets(Turret[] turrets)
     {
         turretsToControl = turrets;
     }
 
+    // Główna pętla logiczna klatki. Staram się tu minimalizować ciężkie obliczenia.
+
+    // Wykonuje cykliczne skanowanie otoczenia bazujac na ustalonym interwale czasowym
     private void Update()
     {
         if (Time.time < nextScanTime) return;
@@ -27,6 +34,7 @@ public class CustomRadarSystem : MonoBehaviour
         nextScanTime = Time.time + scanInterval;
     }
 
+    // Szuka najblizszego gracza w zasiegu i aktualizuje stan systemu oraz cele wiezyczek
     private void ScanForPlayer()
     {
         Transform closest = FindClosestPlayer();
@@ -55,6 +63,7 @@ public class CustomRadarSystem : MonoBehaviour
         }
     }
 
+    // Przeszukuje sferycznie otoczenie i zwraca transformacje najblizszego obiektu gracza
     private Transform FindClosestPlayer()
     {
         Collider[] hits = Physics.OverlapSphere(transform.position, detectionRadius);
@@ -77,6 +86,7 @@ public class CustomRadarSystem : MonoBehaviour
         return closest;
     }
 
+    // Weryfikuje czy dany collider nalezy do gracza sprawdzajac tagi oraz warstwy
     private static bool IsPlayerCollider(Collider col)
     {
         if (col.CompareTag("Player")) return true;
@@ -84,6 +94,7 @@ public class CustomRadarSystem : MonoBehaviour
         return playerLayer >= 0 && col.gameObject.layer == playerLayer;
     }
 
+    // Oblicza pozycje wyprzedzajaca dla celu i weryfikuje katy celowania wiezyczek
     private void UpdateTurrets(Transform target)
     {
         if (turretsToControl == null) return;

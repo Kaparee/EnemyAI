@@ -1,7 +1,8 @@
-using System;
+﻿using System;
 using UnityEngine;
 
 [Serializable]
+// ScriptableObject definiujący parametry konkretnego zasobu (np. jego ikonę i limit w pojedynczym stosie ekwipunku).
 public class ResourceDefinition
 {
     public string Name;

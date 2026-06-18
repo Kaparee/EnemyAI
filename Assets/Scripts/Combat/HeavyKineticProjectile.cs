@@ -1,5 +1,6 @@
 using UnityEngine;
 
+// Skrypt obsługujący zachowanie, fizykę i zadawane obrażenia ciężkich pocisków kinetycznych po wystrzeleniu.
 public class HeavyKineticProjectile : MonoBehaviour
 {
     [Header("FIZYKA")]
@@ -14,6 +15,7 @@ public class HeavyKineticProjectile : MonoBehaviour
     private Transform ownerRoot;
     private float activeDamage;
 
+    // Inicjalizuje parametry fizyczne oraz wizualne pocisku przy powstaniu obiektu
     void Awake()
     {
         rb = GetComponent<Rigidbody>();
@@ -47,8 +49,10 @@ public class HeavyKineticProjectile : MonoBehaviour
         }
     }
 
+    // Zwraca zdefiniowana predkosc poczatkowa wlasnego lotu
     public float GetInitialSpeed() => initialSpeed;
 
+    // Zapisuje informacje o strzelajacym i dodaje sily inicjujace ruch pocisku
     public void Launch(Vector3 direction, Vector3 shooterVelocity = default, Transform owner = null, float damageOverride = -1f)
     {
         ownerRoot = owner != null ? owner.root : null;
@@ -57,6 +61,9 @@ public class HeavyKineticProjectile : MonoBehaviour
         rb.AddForce(direction.normalized * initialSpeed, ForceMode.VelocityChange);
     }
 
+    // Przeliczanie fizyki. Tutaj aplikowane są wszystkie siły, żeby uniknąć jitteringu.
+
+    // Przelicza fizyke obrotu wzgledem wektora predkosci oraz niszczy obiekt po czasie
     void FixedUpdate()
     {
         rb.linearDamping = dragInSpace;
@@ -69,6 +76,7 @@ public class HeavyKineticProjectile : MonoBehaviour
             Destroy(gameObject);
     }
 
+    // Oblicza sily zderzenia i zadaje obrazenia przy kontakcie z cialem fizycznym
     void OnCollisionEnter(Collision col)
     {
         if (ownerRoot != null && col.transform.root == ownerRoot)

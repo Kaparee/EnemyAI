@@ -3,12 +3,18 @@ using System.Collections.Generic;
 using System;
 using UnityEngine;
 
+// Implementacja algorytmu A* (A-Star) w trójwymiarowej przestrzeni z wykorzystaniem siatki o stałym kroku (SnapToGrid).
+// Zdecydowałem się na korutyny, żeby uniknąć blokowania wątku głównego przy obliczaniu długich ścieżek.
+// Funkcja heurystyczna (h) to odległość euklidesowa. Ponieważ zawsze zaniża lub podaje dokładny koszt,
+// jest to heurystyka dopuszczalna, co gwarantuje odnalezienie optymalnej trasy.
+// W closedSet użyłem HashSet ze strukturą GridKey (z własnym GetHashCode) dla maksymalnej wydajności wyszukiwania.
 public class ManualAStar
 {
     private struct GridKey : IEquatable<GridKey>
     {
         public int x, y, z;
 
+        // Przelicza wspolrzedne swiata na indeksy komorek siatki w zaleznosci od kroku
         public static GridKey From(Vector3 pos, float step)
         {
             return new GridKey
@@ -19,8 +25,11 @@ public class ManualAStar
             };
         }
 
+        // Sprawdza czy dwie struktury kluczy maja identyczne indeksy
         public bool Equals(GridKey other) => x == other.x && y == other.y && z == other.z;
+        // Weryfikuje rownosc z innym obiektem rzutujac go na typ klucza siatki
         public override bool Equals(object obj) => obj is GridKey other && Equals(other);
+        // Generuje unikalny kod haszujacy uzywajac liczb pierwszych dla slownikow
         public override int GetHashCode() => (x * 73856093) ^ (y * 19349663) ^ (z * 83492791);
     }
 
@@ -30,10 +39,22 @@ public class ManualAStar
         public GridKey key;
         public Node parent;
         public float gCost;
+        // Wartość heurystyczna h(n) do celu. Szacuje odległość.
+
         public float hCost;
+        // Koszt całkowity f(n) = g(n) + h(n). AI zawsze wybiera węzeł o najniższym FCost.
+
         public float FCost => gCost + hCost;
     }
 
+    // Główna funkcja wykonująca algorytm odnajdywania optymalnej ścieżki A*.
+    // Implementacja została zaprojektowana z myślą o środowisku dynamicznym:
+    // przelicza ścieżkę w locie, uwzględniając poruszającego się gracza oraz
+    // przeszkody pojawiające się i znikające z pola bitwy.
+    // W charakterze dopuszczalnej heurystyki (h) wykorzystano odległość euklidesową.
+    // Rozdzielam obliczenia A* na klatki (yield return null), by uniknąć spadków FPS przy skomplikowanych labiryntach z asteroid.
+
+    // Wykonuje krokowe poszukiwanie trasy algorytmem A Star w przestrzeni trojwymiarowej
     public static IEnumerator FindPathCoroutine(Vector3 start, Vector3 target, float nodeRadius, LayerMask obstacleMask, Action<List<Vector3>> callback)
     {
         float step = nodeRadius * 2f;
@@ -111,6 +132,7 @@ public class ManualAStar
                 }
 
                 neighborNode.gCost = newGCost;
+                // Obliczenie kosztu heurystycznego h(n) w oparciu o dystans euklidesowy.
                 neighborNode.hCost = Vector3.Distance(neighborPos, snappedTarget);
                 neighborNode.parent = currentNode;
             }
@@ -121,6 +143,11 @@ public class ManualAStar
         callback?.Invoke(new List<Vector3>());
     }
 
+    // Skaner weryfikujący dostępność węzła w siatce w oparciu o bieżący stan rejestru przeszkód.
+    // Pozwala to algorytmowi omijać na bieżąco ruchome asteroidy i inne statki przemieszczające się w przestrzeni.
+    // Szybkie sprawdzanie kolizji węzła siatki. Zoptymalizowane maskami warstw.
+
+    // Sprawdza czy dany wezel koliduje z zarejestrowanymi przeszkodami oraz obiektami fizycznymi
     private static bool IsBlocked(Vector3 pos, float checkRadius, LayerMask obstacleMask)
     {
         if (ObstacleRegistry.Instance != null && ObstacleRegistry.Instance.IsPositionBlocked(pos, checkRadius * 0.9f))
@@ -132,6 +159,7 @@ public class ManualAStar
         return false;
     }
 
+    // Zaokragla pozycje swiata do najblizszego wezla regularnej siatki
     private static Vector3 SnapToGrid(Vector3 pos, float step)
     {
         return new Vector3(
@@ -141,6 +169,7 @@ public class ManualAStar
         );
     }
 
+    // Odtwarza wyliczona trase idac od wezla koncowego po rodzicach az do startu
     private static List<Vector3> RetracePath(Node startNode, Node endNode)
     {
         List<Vector3> path = new List<Vector3>();
@@ -156,6 +185,7 @@ public class ManualAStar
         return path;
     }
 
+    // Zwraca liste 6 sasiadujacych wezlow w ortogonalnych kierunkach trojwymiarowych
     private static List<Vector3> GetNeighbors(Vector3 pos, float step)
     {
         return new List<Vector3>

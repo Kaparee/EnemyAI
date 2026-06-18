@@ -1,5 +1,6 @@
 using UnityEngine;
 
+// Implementacja logiki wyrzutni ciężkich kinetycznych pocisków, zadającej ogromne obrażenia kosztem szybkostrzelności.
 public class HeavyKineticLauncher : MonoBehaviour
 {
     [SerializeField] private GameObject projectilePrefab;
@@ -13,6 +14,7 @@ public class HeavyKineticLauncher : MonoBehaviour
     public Vector3 MuzzlePosition => muzzle != null ? muzzle.position : transform.position;
     public float Cooldown => cooldown;
 
+    // Pobiera referencje do glownego ciala fizycznego przy uruchomieniu
     void Start()
     {
         parentRb = GetComponentInParent<Rigidbody>();
@@ -20,12 +22,14 @@ public class HeavyKineticLauncher : MonoBehaviour
             muzzle = transform.Find("WeaponMuzzle");
     }
 
+    // Zwraca procentowy postep przeladowania wyrzutni jako ulamek
     public float GetReloadProgress()
     {
         if (cooldown <= 0f) return 1f;
         return Mathf.Clamp01((Time.time - lastShot) / cooldown);
     }
 
+    // Sprawdza i zwraca poczatkowa predkosc uzywanego pocisku
     public float GetProjectileSpeed()
     {
         if (projectilePrefab != null)
@@ -36,6 +40,7 @@ public class HeavyKineticLauncher : MonoBehaviour
         return 40f;
     }
 
+    // Weryfikuje czas odnowienia i wystrzeliwuje nowy pocisk uwzgledniajac statystyki pojazdu
     public void TryFire()
     {
         if (Time.time - lastShot < cooldown) return;

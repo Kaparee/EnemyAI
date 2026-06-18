@@ -1,9 +1,11 @@
 using UnityEngine;
 
+// Wykrywa i przelicza trafienia obiektów, odejmując im punkty zdrowia przy kolizjach lub postrzałach.
 public class DamageCollision : MonoBehaviour
 {
     [SerializeField] private float damageMultiplier = 1.0f;
 
+    // Aplikuje obrazenia obiektowi bazujac na sile zderzenia fizycznego miedzy cialami
     private void OnCollisionEnter(Collision collision)
     {
         if (collision.relativeVelocity.magnitude > 5f)

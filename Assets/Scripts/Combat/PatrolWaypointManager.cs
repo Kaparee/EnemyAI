@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+// Menedżer punktów patrolowych dla jednostek AI.
+// Pozwala definiować ścieżki i logiczne powiązania między waypointami. Implementuje graf skierowany tras.
 public class PatrolWaypointManager : MonoBehaviour
 {
     public Vector3 sectorCenter = Vector3.zero;
@@ -12,11 +14,13 @@ public class PatrolWaypointManager : MonoBehaviour
 
     private List<Vector3> waypoints = new List<Vector3>();
 
+    // Pobiera wymiary sektora z globalnego menedzera na poczatku dzialania
     void Start()
     {
         RefreshFromChunkManager();
     }
 
+    // Uaktualnia pozycje menedzera oraz generuje na nowo punkty patrolowe w sektorze
     public void RefreshFromChunkManager()
     {
         if (ChunkManager.Instance != null)
@@ -35,6 +39,7 @@ public class PatrolWaypointManager : MonoBehaviour
         GenerateWaypoints();
     }
 
+    // Losuje w przestrzeni zestaw poprawnych punktow uzywajac narzuconych limitow odleglosci
     public void GenerateWaypoints()
     {
         waypoints.Clear();
@@ -74,6 +79,7 @@ public class PatrolWaypointManager : MonoBehaviour
         AILog.Patrol($"Gotowe — {waypoints.Count} punktów rozrzuconych po sektorze (A* będzie między nimi latał).");
     }
 
+    // Generuje zapasowy punkt korzystajac ze wzorow spirali jezeli losowanie zawiedzie
     private Vector3 PickFallbackPoint(int index)
     {
         float golden = index * 2.399963f;
@@ -84,6 +90,7 @@ public class PatrolWaypointManager : MonoBehaviour
             Mathf.Sin(golden) * r);
     }
 
+    // Weryfikuje czy nowy punkt ma odpowiedni dystans od wszystkich wczesniej utworzonych
     private bool IsFarEnoughFromOthers(Vector3 candidate)
     {
         for (int i = 0; i < waypoints.Count; i++)
@@ -94,6 +101,7 @@ public class PatrolWaypointManager : MonoBehaviour
         return true;
     }
 
+    // Sprawdza czy dany punkt znajduje sie w obiekcie uzywajac fizyki i rejestru
     private bool IsBlocked(Vector3 pos)
     {
         if (obstacleMask.value != 0 && Physics.CheckSphere(pos, 20f, obstacleMask))
@@ -102,5 +110,6 @@ public class PatrolWaypointManager : MonoBehaviour
         return ObstacleRegistry.Instance != null && ObstacleRegistry.Instance.IsPositionBlocked(pos, 20f);
     }
 
+    // Tworzy i zwraca kopie listy wszystkich aktywnych punktow patrolowych
     public List<Vector3> GetWaypoints() => new List<Vector3>(waypoints);
 }

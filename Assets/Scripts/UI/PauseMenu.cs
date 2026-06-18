@@ -4,17 +4,20 @@ using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using TMPro;
 
+// Przerywa upływ czasu w grze (Time.timeScale = 0) i wywołuje menu z podstawowymi opcjami wstrzymania.
 public class PauseMenu : MonoBehaviour
 {
     public static bool isPaused;
     
     private GameObject pauseMenuRoot;
 
+    // Rozpoczyna wlasciwa budowe struktury elementow interfejsu uzytkownika dla menu pauzy.
     private void Start()
     {
         BuildUi();
     }
 
+    // Inicjalizuje korzen menu pauzy oraz programowo tworzy przyciski akcji wraz z ich konfiguracja i kotwiczeniem.
     private void BuildUi()
     {
         if (SharedUIManager.Instance == null || SharedUIManager.Instance.MainCanvas == null) return;
@@ -35,6 +38,7 @@ public class PauseMenu : MonoBehaviour
         pauseMenuRoot.SetActive(false);
     }
 
+    // Generuje pojedynczy element przycisku UI na zadanej pozycji i wiaze go z wprowadzona metoda delegata.
     private void CreateButton(string label, Transform parent, Vector2 pos, UnityEngine.Events.UnityAction action)
     {
         var btnGo = new GameObject("Button_" + label, typeof(RectTransform), typeof(Image), typeof(Button));
@@ -62,6 +66,7 @@ public class PauseMenu : MonoBehaviour
         tmp.fontSize = 24f;
     }
 
+    // Przetwarza wejscie z nowego systemu sterowania InputSystem w celu zbadania stanu i wywolania pauzy bądz jej odwolania.
     public void OnPause(InputAction.CallbackContext context)
     {
         if (!context.performed) return;
@@ -69,6 +74,9 @@ public class PauseMenu : MonoBehaviour
         else PauseGame();
     }
 
+    // Główna pętla logiczna klatki. Staram się tu minimalizować ciężkie obliczenia.
+
+    // Weryfikuje wcisniecie klawisza Escape w biezacej klatce, by na przemian wywolywac stan pauzy i wznawiania.
     private void Update()
     {
         if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
@@ -78,6 +86,7 @@ public class PauseMenu : MonoBehaviour
         }
     }
 
+    // Skaluje czas w silniku gry do zera, wlacza renderowanie interfejsu menu oraz uwalnia blokade kursora.
     public void PauseGame()
     {
         if (pauseMenuRoot != null) pauseMenuRoot.SetActive(true);
@@ -87,6 +96,7 @@ public class PauseMenu : MonoBehaviour
         Cursor.visible = true;
     }
 
+    // Przywraca normalna skale uplywu czasu w grze, chowa obiekty panelu pauzy i ukrywa kursor myszy.
     public void ResumeGame()
     {
         if (pauseMenuRoot != null) pauseMenuRoot.SetActive(false);
@@ -96,6 +106,7 @@ public class PauseMenu : MonoBehaviour
         Cursor.visible = false;
     }
     
+    // Zeruje flage wstrzymania, ustawia standardowa skale czasu i inicjalizuje ponownie pelen proces biezacej sceny.
     public void RestartGame()
     {
         Time.timeScale = 1f;
@@ -106,6 +117,7 @@ public class PauseMenu : MonoBehaviour
         else SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
+    // Wymusza zamkniecie aplikacji na platformie docelowej lub konczy dzialanie trybu podgladu PlayMode w edytorze Unity.
     public void QuitGame()
     {
 #if UNITY_EDITOR

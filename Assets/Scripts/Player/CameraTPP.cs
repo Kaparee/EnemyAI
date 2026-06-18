@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+// Kamera zza pleców (Third-Person Perspective), płynnie i z wygładzeniem podążająca za sterowanym statkiem.
 public class CameraTPP : MonoBehaviour
 {
     public Transform target;
@@ -28,6 +29,7 @@ public class CameraTPP : MonoBehaviour
 
     [SerializeField] private float smoothSpeed = 10f;
 
+    // Konfiguruje poczatkowe ustawienia kamery, ukrywa kursor oraz pobiera poczatkowe obroty obiektu docelowego.
     void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
@@ -46,6 +48,7 @@ public class CameraTPP : MonoBehaviour
         }
     }
 
+    // Oblicza nowa pozycje oraz rotacje kamery po wykonaniu wszystkich innych operacji w biezacej klatce, z uwzglednieniem wejscia uzytkownika i interpolacji.
     void LateUpdate()
     {
         if (target == null) return;

@@ -1,9 +1,11 @@
 using UnityEngine;
 
+// Mechanizm przywracający stan gry do czystej karty, przeładowujący scenę bez ponownego ładowania zasobów.
 public class Restart : MonoBehaviour
 {
     private ShipStats shipStats;
 
+    // Cofa parametry statku gracza do wartosci poczatkowych i teleportuje go z powrotem do punktu startowego na srodku sceny.
     public void RestartMethod()
     {
         GameObject player = GameObject.FindGameObjectWithTag("Player");
