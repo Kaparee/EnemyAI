@@ -1,0 +1,167 @@
+\documentclass[12pt, a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{polski}
+\usepackage{mathptmx}
+\usepackage{graphicx}
+
+\usepackage[a4paper, top=2.5cm, bottom=2.5cm, left=2.5cm, right=2.5cm]{geometry}
+\raggedbottom
+
+\usepackage{setspace}
+\onehalfspacing
+
+\usepackage{indentfirst}
+\setlength{\parindent}{1cm}
+
+\usepackage{titlesec}
+\newcommand{\sectionbreak}{\clearpage} 
+\titleformat{\section}{\normalfont\Large\bfseries}{\thesection.}{1em}{}
+\titleformat{\subsection}{\normalfont\large\bfseries}{\thesection.\arabic{subsection}.}{1em}{}
+\titleformat{\subsubsection}{\normalfont\normalsize\bfseries}{\thesection.\arabic{subsection}.\arabic{subsubsection}.}{1em}{}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\fancyfoot[R]{\thepage}
+
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{caption}
+
+\usepackage{enumitem}
+\setlist[itemize]{label=--}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    filecolor=black,      
+    urlcolor=black,
+    pdftitle={Dokumentacja Techniczna EnemyAI},
+}
+
+\begin{document}
+
+\begin{titlepage}
+    \begin{minipage}[t]{0.6\textwidth}
+        \vspace{0pt}
+        \textbf{Uniwersytet Rzeszowski}\\[2mm]
+        \textbf{Wydział Nauk Ścisłych i Technicznych}
+    \end{minipage}
+    \begin{minipage}[t]{0.4\textwidth}
+        \vspace{0pt}
+        \flushright
+        \includegraphics[width=0.7\textwidth]{logo_ur.png} 
+    \end{minipage}
+
+    \vspace{4cm} 
+
+    \centering
+    \Large 
+    Jakub Płocica 1234960\\
+    Kacper Ręczak 134968\\
+    Kamil Szopniewski 134976\\
+    \vspace{2cm}
+
+    {\Huge \textbf{EnemyAI – Inteligentny system sterowania statkiem kosmicznym w przestrzeni 3D}}\\[1cm]
+    
+    {\Large \textbf{Dokumentacja projektowa}}\\[1cm]
+    
+    Projekt zaliczeniowy przedmiotu Sztuczna inteligencja
+
+    \vfill
+
+    \begin{flushright}
+        \textbf{Prowadzący:}\\
+        mgr inż. Marcin Mrukowicz
+    \end{flushright}
+
+    \vspace{1.5cm}
+    Rzeszów, 2026 r.
+
+\end{titlepage}
+
+\newpage
+\tableofcontents
+\newpage
+
+\section{Wstęp}
+\subsection{Cel projektu}
+Projekt dotyczy zaimplementowania inteligentnego systemu sztucznej inteligencji (AI) przeciwnika w grze symulującej walkę statków kosmicznych w przestrzeni trójwymiarowej (przestrzeń kosmiczna z pasem asteroid), wykorzystującej silnik Unity 6 i fizykę Rigidbody. Zgodnie z głównymi założeniami projektowymi przedmiotu Sztuczna Inteligencja, celem było stworzenie zaawansowanego statku AI działającego w modelu \textbf{Predictive-Reactive}. System rozwiązuje praktyczny problem nawigacji w środowisku o zmiennej strukturze grafu oraz podejmowania decyzji taktycznych w warunkach niepewności, symulując walkę burtową okrętów.
+
+Statek AI operuje wyłącznie w oparciu o zaimplementowane od podstaw zaawansowane algorytmy decyzyjne: algorytm Minimax z odcięciem alfa-beta oraz algorytm heurystycznego przeszukiwania A* w pełnej przestrzeni 3D. 
+
+
+\section{Teoria i implementacja wykorzystanych algorytmów sztucznej inteligencji}
+
+\subsection{Algorytm A* w dynamicznej przestrzeni 3D}
+\textbf{Podstawy teoretyczne:} Algorytm A* to heurystyczny algorytm przeszukiwania grafu, gwarantujący znalezienie najkrótszej ścieżki (o ile użyta heurystyka jest dopuszczalna). W klasycznym ujęciu oblicza on funkcję kosztu $f(n) = g(n) + h(n)$, gdzie $g(n)$ to rzeczywisty koszt dotarcia ze startu do węzła $n$, a $h(n)$ to szacowany (heurystyczny) koszt dotarcia z węzła $n$ do celu. Ze względu na w pełni zaimplementowane środowisko przestrzeni kosmicznej, problemem staje się nawigacja w sześciu stopniach swobody, co wyklucza użycie płaskich struktur grafowych.
+
+\textbf{Szczegóły implementacji w kodzie:} 
+Odgórny wymóg manualnego odnajdywania optymalnej ścieżki wykluczył użycie natywnego rozwiązania \texttt{NavMeshAgent}. Główna implementacja nawigacji opiera się na skrypcie \texttt{ManualAStar.cs}. Mapa przed rozpoczęciem rozgrywki dzielona jest na sześciany w ramach trójwymiarowej siatki wokseli (Voxel Grid), reprezentowanych strukturą \texttt{Node[x,y,z]}. Algorytm korzysta z autorskiej, zoptymalizowanej kolejki priorytetowej w celu dobierania węzła o najniższym współczynniku $f(n)$.
+
+W funkcji \texttt{CalculatePath()} silnik wylicza dystans heurystyczny przy użyciu klasycznej miary euklidesowej: $h(n) = \sqrt{(x_1 - x_2)^2 + (y_1 - y_2)^2 + (z_1 - z_2)^2}$. Z uwagi na zmienność środowiska, podczas przeszukiwania węzły weryfikują zajętość miejsca (skanowane asteroidy) za pomocą rzutowania \texttt{Physics.OverlapBox}.
+Z powodu znacznej rozpiętości siatki Grid 3D obliczenia powodowały znaczne spadki wydajności i utratę płynności renderowania obrazu. Zastosowano zaawansowane rozwiązanie optymalizacyjne: algorytm został zaimplementowany jako współprogram (ang. \textit{Coroutine}) przy użyciu interfejsu \texttt{IEnumerator}. Główna pętla \texttt{while} wykonująca ekspansję węzłów inkrementuje licznik zbadanych elementów. Po osiągnięciu stałej wartości (40 operacji), skrypt wywołuje instrukcję \texttt{yield return null}, co powoduje zawieszenie działania algorytmu A* do kolejnej klatki renderowania. Podejście to gwarantuje zachowanie płynności na poziomie 60 FPS, unikając jednoczesnego zablokowania wątku głównego (ang. \textit{main thread blocking}) i nie powodując odczuwalnych opóźnień w logice decyzyjnej przeciwnika.
+
+\subsection{Algorytm Minimax z odcięciem $\alpha$-$\beta$}
+\textbf{Podstawy teoretyczne:} Minimax to klasyczny algorytm z zakresu sztucznej inteligencji oraz teorii gier o sumie zerowej z pełną informacją. Wybiera on akcję, która minimalizuje maksymalną możliwą stratę – matematycznie zabezpiecza pozycję, zakładając, że oponent zawsze odpowie dla niego najlepszym z możliwych ruchów. Z uwagi na wykładniczą złożoność na drzewach decyzji (drzewo manewrów w przestrzeni gier dynamicznych), wprowadzono algorytm odcięcia alfa-beta. Służy on do zmniejszenia liczby węzłów ocenianych w drzewie poprzez zaniechanie eksploracji gałęzi, jeżeli nie przyniosą one wyższej wygranej niż ścieżki już odkryte.
+
+\textbf{Szczegóły implementacji w kodzie:} 
+Podczas gdy statek przechodzi w stan "Combat", moduł sztucznej inteligencji zaczyna stale wywoływać rekurencyjną metodę w języku C\#, posiadającą sygnaturę bliską \texttt{float Minimax(State node, int depth, float alpha, float beta, bool isMaximizingPlayer)}. Algorytm generuje hipotetyczne pozycje własnego statku (np. rotacja $+25^{\circ}$, lot w przód, ucieczka) względem przewidywanych wektorów prędkości ucieczki gracza w perspektywie najbliższych dwóch sekund gry.
+
+Najbardziej kluczowym elementem implementacji logicznej jest matematyczna funkcja ewaluacyjna wywoływana dla każdego liścia decyzyjnego (\texttt{EvaluateState()}). Oblicza ona wynik taktyczny punktując 3 główne wagi:
+\begin{itemize}
+    \item \textbf{Kąt ostrzału i manewr burtowy:} Wykorzystując mechanikę wektorową silnika Unity (\texttt{Vector3.Dot()}), sprawdzane jest odchylenie kątowe pomiędzy zwrotem gracza a statkiem AI. Silnik punktuje ekstremalnie wysoko pozycje dążące do zachowania kąta 90 stopni (burta wystawiona względem przodu gracza). Maksymalizuje to pole rażenia własnych artylerii, dając przewagę w ostrzale.
+    \item \textbf{Zasięg optymalny (Dystans):} Obliczana znormalizowana wartość preferuje dystans od 80 do 120 jednostek. Przekroczenie go zmniejsza punkty (groźba ucieczki), a zbytnie skrócenie go skutkuje nałożeniem skrajnie negatywnych wag liczbowych (kary punktowe), co zmusza system decyzyjny AI do unikania zderzeń czołowych i taranowania gracza.
+    \item \textbf{Punkty witalne i pancerz strefowy:} System ma dostęp do referencji na \texttt{ShipStats.cs}. W funkcji heurystycznej wynik jest znacząco redukowany, jeżeli sprawdzany kierunek lotu wystawia na cios strefę pancerza (np. uszkodzony tył), która posiada krytycznie niski poziom punktów wytrzymałości.
+\end{itemize}
+Algorytm alfa-beta z sukcesem odrzuca liczne gałęzie drzewa symulacji, w których straty dla statku są bezcelowo głębokie. Finalnie wybrany ruch optymalny jest tłumaczony na wektory pędu w C\# i przekazywany bezpośrednio do modułu lotu opartego o wektory \texttt{Rigidbody}.
+
+
+\section{Przebieg rozgrywki pomiędzy człowiekiem a sztuczną inteligencją}
+W ramach demonstracji poprawności zaimplementowanych rozwiązań Predictive-Reactive, zarejestrowano wideo dokumentujące starcie pomiędzy graczem a przeciwnikiem. Zamiast obrazów referencyjnych wprowadzono ścisłe znaczniki czasowe (minuty:sekundy), pozwalając na podgląd akcji.
+
+\begin{itemize}
+    \item \textbf{Inicjalizacja środowiska, nasłuch FSM i patrol [00:00 - 00:05]:} Uruchomienie sceny z widoku edytora i potwierdzenie działania Global Event Bus oraz FSM logami diagnostycznymi w konsoli Unity (m.in. \textit{"Ship stats initialized"}). Zbudowana siatka trójwymiarowych współrzędnych obrazuje przestrzeń operacyjną Voxel Grid algorytmu A*. Ponadto, w początkowej fazie widoczny jest statek przeciwnika realizujący ścieżkę patrolową, podczas której algorytm Minimax wstępnie analizuje przestrzeń pod kątem optymalnego pozycjonowania taktycznego.
+    
+    \item \textbf{Analiza fizyczna statku Gracza [00:06 - 00:21]:} Zarejestrowano w panelu \textit{Inspector} bazowe systemy Unity (\texttt{Rigidbody}, Collidery), na których nadbudowano systemy balistyki kinetycznej i lotu bezwładnościowego używanego następnie przez A*. Widoczny jest też status wielostrefowego pancerza.
+    
+    \item \textbf{Zagęszczenie pola walki i konieczność użycia A* z Raycastami [00:22 - 00:44]:} Ujęcie makro ukazujące olbrzymie pole asteroid udowadnia, że przelot do któregokolwiek z 7 wylosowanych punktów patrolowych bez połączenia A* i reaktywnego unikania nosowego (3x Raycast) skończyłby się natychmiastową kolizją.
+    
+    \item \textbf{Inicjacja kontaktu i system Lead Target [00:45 - 01:05]:} Po wykryciu gracza przez Radar, Event Bus wymusza tranzycję FSM do stanu Combat. AI, sterując wieżyczkami z ograniczeniem kątowym, aplikuje matematykę wyprzedzania strzału (Leading) i posyła czerwone pociski kinetyczne nie w statek gracza, a w docelowy punkt przed nim.
+    
+    \item \textbf{Triumf sztucznej inteligencji, błąd ludzki i zniszczenie gracza [01:06 - 01:12]:} Błąd gracza polegający na braku manewrowania został w stu procentach rozczytany przez przewidujący strzał moduł balistyczny Kamila. Obrażenia kierunkowe pancerza strefowego niszczą jednostkę; wyświetla się ekran porażki.
+    
+    \item \textbf{Przegrana AI w krytycznym zwarciu [01:13 - 01:37]:} Gracz gwałtownie taranuje przeciwnika i zadaje potężne obrażenia. W sytuacji bez wyjścia i przy spadku HP bota poniżej 25\%, Kacper (Mózg AI) próbuje uruchomić stan ratunkowy Flee Mode, ale przewaga ognia niszczy go przed ucieczką. Scena ukazuje poprawne działanie maszyny stanów w sytuacjach bezbłędnej ofensywy gracza i przegraną AI.
+    
+    \item \textbf{Dominacja algorytmu Minimax z odcięciem alfa-beta [01:38 - 02:03]:} Praktyczne potwierdzenie optymalności użytego algorytmu. Minimax przetwarza przyszłe ruchy gracza i zamiast kierować przeciwnika prosto na ostrzał frontalny, zmusza statek do szerokiego, prostopadłego manewru burtowego. Maksymalizuje to pole ognia bocznych wieżyczek AI, równocześnie utrudniając graczowi precyzyjne strzały. Zapas HP gracza drastycznie spada [01:52], co kończy się ponowną klęską ludzkiego refleksu w walce ze zoptymalizowaną heurystyką [01:58].
+    
+    \item \textbf{Uniwersalność Architektury Standalone (perspektywa bota) [02:04 - 02:53]:} Ujęcie kamery zza statku bota (Third Person). Potwierdza to idealną separację kodu według paradygmatu Standalone. Zbudowany fizyczny silnik lotu, pancerz strefowy i uzbrojenie operują z poziomu Singletona i odbierają komunikaty Event Bus na tyle elastycznie, że te same moduły mogą być pilotowane komendami od AI (A*, Minimax), jak i przez kontrolery gracza bez zmieniania logiki bazowej. Nagranie zamyka ekran zwycięstwa [02:48].
+\end{itemize}
+
+\section{Napotkane problemy, wyzwania i sposoby ich rozwiązania}
+Podczas realizacji zaawansowanej architektury Predictive-Reactive zespół musiał pokonać szereg trudności architektonicznych:
+\begin{itemize}
+    \item \textbf{Złożoność implementacji zaleconego algorytmu A* w środowisku pełnego 3D:} Przejście z przeszukiwania płaskich siatek 2D na przeszukiwanie objętościowe w kosmosie wymagało sprytnego zoptymalizowania pamięci operacyjnej. \textbf{Rozwiązanie:} Skonstruowano od podstaw własną, trójwymiarową przestrzeń wokselową (Voxel Grid) dzielącą sektor na gridy i operującą na niestandardowej euklidesowej funkcji kosztów uwzględniającej gabaryty kadłuba (\texttt{ManualAStar.cs}).
+    \item \textbf{Spadki wydajności przez obciążenia obliczeniowe algorytmów sztucznej inteligencji:} Równoległe wyznaczanie kilkunastu ścieżek A* w gęstym polu asteroid wraz z jednoczesnym symulowaniem gałęzi decyzji Minimaxa generowało znaczne obciążenie jednostki centralnej (CPU). \textbf{Rozwiązanie:} Zredukowano złożoność czasową operacji używając algorytmu odcięcia alfa-beta (dla drzewa Minimax) oraz zaimplementowano A* wewnątrz współprogramów (\textit{Coroutines}), wymuszając asynchroniczny podział operacji na mniejsze zbiory realizowane w kolejnych klatkach obrazu (\textit{time-slicing}). Zapewniło to nienaganną stabilność i płynność działania aplikacji (60 FPS).
+    \item \textbf{Dryf bezwładnościowy i problemy celowania (Balistyka):} W środowisku zero-G czysty \texttt{Rigidbody} stale uciekał z wektora nadanego mu przez Minimaxa, a pociski nie trafiały ze względu na dodawanie rotacji i pędu. \textbf{Rozwiązanie:} Matematycznie odseparowano obrót wieżyczek od samego statku (\#185), blokując kąty ostrzału ($Mathf.Clamp$), a dryf kadłuba wygaszano autorskim wektorem stabilizacji bocznej (\texttt{antiDriftFactor}).
+    \item \textbf{Zbyt wolny czas reakcji A* na bezpośrednie kolizje z asteroidami:} Algorytm wytyczania optymalnej drogi radził sobie z całą siatką nawigacyjną, ale potrafił zignorować szybko mknące fragmenty gruzu z racji bycia za długim na szybki unik na 2 metry przed kolizją. \textbf{Rozwiązanie:} Wprowadzono w model \textit{Predictive-Reactive} układ "odruchu bezwarunkowego". Trzy proste promienie nosowe (\textit{Raycasty} \#194) w pełni niezależne od A* przejęły odpowiedzialność za fizyczne, błyskawiczne odpychanie maszyny na centymetry przed zderzeniem.
+    \item \textbf{Problemy Architektoniczne w Unity:} Klasyczne implementacje i sztywne referencje generowały błędy typu \textit{NullReferenceException} podczas dynamicznego niszczenia i odradzania się wielu obiektów (\textit{respawn}). \textbf{Rozwiązanie:} Wdrożono architekturę Standalone opartą w całości na komunikacji pośredniej z wykorzystaniem magistrali zdarzeń (Global Event Bus) oraz wzorca projektowego Singleton (\texttt{GameManager.Instance}). Dzięki temu usunięcie przeciwnika wywołuje jedynie zdarzenie w systemie, zwalniając obiekty bez ryzyka wywołania wyjątków w skryptach zależnych.
+\end{itemize}
+
+\section{Wykorzystanie Generatywnej Sztucznej Inteligencji}
+Podczas prac nad projektem wsparto się narzędziami opartymi na generatywnej sztucznej inteligencji (LLM), a dokładnie wykorzystano model \textbf{Gemini 3.1 Pro (High)}. Zastosowanie tych rozwiązań miało charakter ściśle pomocniczy i nie obejmowało generowania kluczowej logiki biznesowej gry. Narzędzia AI zostały wykorzystane wyłącznie do dwóch celów:
+
+\begin{enumerate}
+    \item \textbf{Redakcja dokumentacji w kodzie:} Narzędzie pomogło zredagować i sformatować utworzone przez nas wcześniej komentarze w kodzie źródłowym. Miało to na celu ujednolicenie stylistyki, poprawienie czytelności oraz nadanie profesjonalnego, inżynieryjnego charakteru.
+    \item \textbf{Weryfikacja algorytmów:} Zewnętrzne AI posłużyło jako narzędzie kontrolne do statycznej analizy kodu. Zostało wykorzystane wyłącznie do sprawdzenia i potwierdzenia poprawności matematycznej naszych autorskich implementacji algorytmu decyzyjnego Minimax (wraz z cięciami alfa-beta) oraz algorytmu odnajdywania optymalnej ścieżki A* (A-Star).
+\end{enumerate}
+
+\section{Podsumowanie i wnioski z implementacji AI}
+Budowa środowiska opartego wyłącznie na ręcznie zaimplementowanych algorytmach sztucznej inteligencji (A* dla nawigacji przestrzennej oraz Minimax z odcięciem $\alpha$-$\beta$ dla działań taktycznych i walki burtowej), połączona z oddziaływaniem czystej fizyki (Rigidbody), udowadnia, że zaawansowany model obliczeniowy może z powodzeniem sterować modelem statku. 
+
+Paradygmat Predictive-Reactive oraz architektura Standalone (GameManager Singleton, Event Bus) wyeliminowały tzw. "sztywne kodowanie", dostarczając dynamiczny ekosystem. Gra reaguje nie tylko na bieżące położenie gracza, ale sprawnie wymusza optymalne formacje obronno-atakujące (manewr burtowy), idealnie radząc sobie z celowaniem wyprzedzającym (Leading). Efektem końcowym jest niepowtarzalny i płynnie działający (60 FPS) symulator bezbłędnej potyczki człowiek-maszyna w środowisku bez grawitacji.
+
+\end{document}
